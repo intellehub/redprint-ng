@@ -1,0 +1,9 @@
+        <div class="form-group has-feedback COL_XS COL_MD COL_LG {{ $errors->has('{{FIELD_NAME}}') ? 'has-error' : '' }}">
+            <label>{{FIELD_NAME_LABEL}}</label>
+            <input type="text" name="{{FIELD_NAME}}" class="form-control" value="{{ ${{MODEL_ENTITY}}->{{FIELD_NAME}} ?: old('{{FIELD_NAME}}') }}">
+            @if ($errors->has('{{FIELD_NAME}}'))
+                <span class="help-block">
+                    <strong>{{ $errors->first('{{FIELD_NAME}}') }}</strong>
+                </span>
+            @endif
+        </div>

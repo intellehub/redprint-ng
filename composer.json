@@ -1,0 +1,46 @@
+{
+  "name": "shah-newaz/redprint",
+  "description": "The Laravel App Builder",
+  "keywords": ["laravel", "admin", "backend", "crud", "builder", "administrator"],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Shahnewaz Rifat",
+      "email": "the.tintin.boss@gmail.com"
+    }
+  ],
+  "require": {
+    "php": "^7.2",
+    "laravel/framework": "^6.0",
+    "vlucas/phpdotenv": "^3.3",
+    "shah-newaz/codecanyon-license": "^2.0",
+    "shah-newaz/permissible": "^2.0",
+    "intervention/image": "^2.4",
+    "shah-newaz/redprint-unity": "^2.0",
+    "squizlabs/php_codesniffer": "3.*",
+    "jackiedo/dotenv-editor": "1.*",
+    "shah-newaz/laravel-config-writer": "^2.0"
+  },
+  "require-dev": {
+  },
+  "autoload": {
+    "psr-4": {
+        "Shahnewaz\\Redprint\\": "src/"
+    },
+    "files": [
+        "src/helpers/general.php"
+    ]
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+          "Shahnewaz\\Redprint\\Providers\\RedprintServiceProvider",
+          "Shahnewaz\\Redprint\\Providers\\RedprintshipServiceProvider"
+      ],
+      "aliases": {
+        "Redprint": "Shahnewaz\\Redprint\\Facades\\RedprintFacade",
+        "Redprintship": "Shahnewaz\\Redprint\\Facades\\RedprintshipFacade"
+      }
+    }
+  }
+}

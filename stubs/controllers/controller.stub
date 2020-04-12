@@ -1,0 +1,66 @@
+<?php
+
+namespace App\Http\Controllers\Backend{{GENERAL_NAMESPACE}};
+
+use {{USE_NAMESPACE}}{{MODEL_CLASS}};
+use Illuminate\Http\Request;
+use Shahnewaz\Redprint\Traits\CanUpload;
+use App\Http\Requests\Backend{{GENERAL_NAMESPACE}}\{{REQUEST_CLASS}};
+use App\Http\Controllers\Controller;
+
+class {{CONTROLLER_CLASS}} extends Controller
+{
+    use CanUpload;
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index(Request $request)
+    {
+        ${{MODEL_ENTITIES}} = {{MODEL_CLASS}}::query();
+        //SEARCH_STATEMENTS
+        ${{MODEL_ENTITIES}} = ${{MODEL_ENTITIES}}->paginate(20);
+        return view('backend.{{MODEL_ENTITIES}}.index')->with('{{MODEL_ENTITIES}}Data', ${{MODEL_ENTITIES}});
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function form({{MODEL_CLASS}} ${{MODEL_ENTITY}} = null)
+    {
+        ${{MODEL_ENTITY}} = ${{MODEL_ENTITY}} ?: new {{MODEL_CLASS}};
+        return view('backend.{{MODEL_ENTITIES}}.form')->with('{{MODEL_ENTITY}}', ${{MODEL_ENTITY}});
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function post({{REQUEST_CLASS}} $request, {{MODEL_CLASS}} ${{MODEL_ENTITY}})
+    {
+        ${{MODEL_ENTITY}} = {{MODEL_CLASS}}::firstOrNew(['id' => $request->get('id')]);
+        //POST_STATEMENTS
+        ${{MODEL_ENTITY}}->save();
+
+        $message = trans('redprint::core.model_added', ['name' => '{{MODEL_ENTITY}}']);
+        return redirect()->route('{{MODEL_ENTITY}}.index')->withMessage($message);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function delete({{MODEL_CLASS}} ${{MODEL_ENTITY}})
+    {
+        ${{MODEL_ENTITY}}->delete();
+        $message = trans('redprint::core.model_deleted', ['name' => '{{MODEL_ENTITY}}']);
+        return redirect()->back()->withMessage($message);
+    }
+}

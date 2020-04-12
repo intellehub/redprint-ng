@@ -1,0 +1,21 @@
+@extends(config('frontend-app-layout', 'layouts.frontend'))
+
+@section('title') {{MODEL_CLASS}} - Index @stop
+
+@section('page_title') {{MODEL_CLASS}} @stop
+@section('page_subtitle') Index @stop
+@section('page_icon') <i class="icon-folder"></i> @stop
+
+@section('content')
+    <div class="col-md-6">
+
+        @foreach(${{MODEL_ENTITIES}}Data as ${{MODEL_ENTITY}}Item)
+            <p class="description">
+                //FRONTEND_ROWS
+            </p>
+        @endforeach
+
+    </div>
+
+    {!! ${{MODEL_ENTITIES}}Data->links() !!}
+@stop

@@ -1,0 +1,70 @@
+<?php
+
+namespace App\Http\Controllers\Backend\API{{GENERAL_NAMESPACE}};
+
+use {{USE_NAMESPACE}}{{MODEL_CLASS}};
+use Illuminate\Http\Request;
+use Shahnewaz\Redprint\Traits\CanUpload;
+use App\Http\Requests\Backend{{GENERAL_NAMESPACE}}\{{REQUEST_CLASS}};
+use App\Http\Resources{{GENERAL_NAMESPACE}}\{{MODEL_CLASS}}Collection;
+use App\Http\Resources{{GENERAL_NAMESPACE}}\{{MODEL_CLASS}} as {{MODEL_CLASS}}Resource;
+use App\Http\Controllers\Controller;
+
+class {{CONTROLLER_CLASS}} extends Controller
+{
+    use CanUpload;
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index(Request $request)
+    {
+        ${{MODEL_ENTITIES}} = {{MODEL_CLASS}}::query();
+        //SEARCH_STATEMENTS
+        ${{MODEL_ENTITIES}} = ${{MODEL_ENTITIES}}->paginate(20);
+        return (new {{MODEL_CLASS}}Collection(${{MODEL_ENTITIES}}));
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function post({{REQUEST_CLASS}} $request, {{MODEL_CLASS}} ${{MODEL_ENTITY}})
+    {
+        ${{MODEL_ENTITY}} = {{MODEL_CLASS}}::firstOrNew(['id' => $request->get('id')]);
+        //POST_STATEMENTS
+        ${{MODEL_ENTITY}}->save();
+
+        $responseCode = $request->get('id') ? 200 : 201;
+        return response()->json(['saved' => true], $responseCode);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function delete(Request $request)
+    {
+        ${{MODEL_ENTITY}} = {{MODEL_CLASS}}::find($request->get('id'));
+        ${{MODEL_ENTITY}}->delete();
+        return response()->json(['no_content' => true], 200);
+    }
+
+    /**
+     * Restore the specified resource to storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function restore(Request $request)
+    {
+        ${{MODEL_ENTITY}} = {{MODEL_CLASS}}::withTrashed()->find($request->get('id'));
+        ${{MODEL_ENTITY}}->restore();
+        return response()->json(['no_content' => true], 200);
+    }
+}

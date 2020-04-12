@@ -1,0 +1,13 @@
+<?php
+
+namespace {{NAMESPACE}};
+
+use Illuminate\Database\Eloquent\{{BASE_MODEL_AS}};
+use Illuminate\Database\Eloquent\{{SOFTDELETES_AS}};
+
+class {{MODEL_CLASS}} extends {{BASE_MODEL}}
+{
+  //PROTECTED_TABLE_NAME
+  use {{BASE_SOFTDELETES}};
+  protected $fillable = ['id'];
+}

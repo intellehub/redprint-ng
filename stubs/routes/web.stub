@@ -1,0 +1,6 @@
+    // {{MODEL_CLASS}} Route
+    Route::get('{{MODEL_ENTITIES}}', '{{ROUTE_NAMESPACE}}{{CONTROLLER_CLASS}}@index')->name('{{MODEL_ENTITY}}.index');
+    Route::get('/{{MODEL_ENTITIES}}/new', '{{ROUTE_NAMESPACE}}{{CONTROLLER_CLASS}}@form')->name('{{MODEL_ENTITY}}.new');
+    Route::get('/{{MODEL_ENTITIES}}/{{{MODEL_ENTITY}}}', '{{ROUTE_NAMESPACE}}{{CONTROLLER_CLASS}}@form')->name('{{MODEL_ENTITY}}.form');
+    Route::post('/{{MODEL_ENTITIES}}/save', '{{ROUTE_NAMESPACE}}{{CONTROLLER_CLASS}}@post')->name('{{MODEL_ENTITY}}.save');
+    Route::post('/{{MODEL_ENTITIES}}/{{{MODEL_ENTITY}}}/delete', '{{ROUTE_NAMESPACE}}{{CONTROLLER_CLASS}}@delete')->name('{{MODEL_ENTITY}}.delete');
