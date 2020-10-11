@@ -1,5 +1,5 @@
 <?php
-namespace Shahnewaz\Redprint\Services;
+namespace Shahnewaz\RedprintNg\Services;
 
 use Illuminate\Database\Migrations\Migrator as BaseMigrator;
 

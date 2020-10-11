@@ -1,12 +1,12 @@
 <?php
-namespace Shahnewaz\Redprint\Services;
+namespace Shahnewaz\RedprintNg\Services;
 
 use DB;
 use Artisan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Filesystem\Filesystem;
-use Shahnewaz\Redprint\Services\Migrator as RedprintMigrator;
+use Shahnewaz\RedprintNg\Services\Migrator as RedprintMigrator;
 
 class MigratorService
 {

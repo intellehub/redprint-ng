@@ -1,9 +1,9 @@
 <?php
 
-namespace Shahnewaz\Redprint\Providers;
+namespace Shahnewaz\RedprintNg\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Shahnewaz\Redprint\Services\RedprintshipService;
+use Shahnewaz\RedprintNg\Services\RedprintshipService;
 
 class RedprintshipServiceProvider extends ServiceProvider
 {

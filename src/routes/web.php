@@ -1,6 +1,6 @@
 <?php
 
-Route::namespace('Shahnewaz\Redprint\Http\Controllers')->middleware('web')->group(function () {
+Route::namespace('Shahnewaz\RedprintNg\Http\Controllers')->middleware('web')->group(function () {
 	
 	Route::middleware(['auth', 'role:su', 'redprint', 'licensed:redprint_license'])->prefix('redprint')->group(function () {
 		  // Builder

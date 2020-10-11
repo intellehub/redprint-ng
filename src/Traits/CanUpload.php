@@ -1,6 +1,6 @@
 <?php 
 
-namespace Shahnewaz\Redprint\Traits;
+namespace Shahnewaz\RedprintNg\Traits;
 
 use Intervention\Image\ImageManagerStatic as Image;
 

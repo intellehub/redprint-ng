@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Backend\API{{GENERAL_NAMESPACE}};
 
 use {{USE_NAMESPACE}}{{MODEL_CLASS}};
 use Illuminate\Http\Request;
-use Shahnewaz\Redprint\Traits\CanUpload;
+use Shahnewaz\RedprintNg\Traits\CanUpload;
 use App\Http\Requests\Backend{{GENERAL_NAMESPACE}}\{{REQUEST_CLASS}};
 use App\Http\Resources{{GENERAL_NAMESPACE}}\{{MODEL_CLASS}}Collection;
 use App\Http\Resources{{GENERAL_NAMESPACE}}\{{MODEL_CLASS}} as {{MODEL_CLASS}}Resource;

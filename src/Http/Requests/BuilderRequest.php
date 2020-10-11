@@ -1,6 +1,6 @@
 <?php
 
-namespace Shahnewaz\Redprint\Http\Requests;
+namespace Shahnewaz\RedprintNg\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 

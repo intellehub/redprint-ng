@@ -1,6 +1,6 @@
 <?php
 
-namespace Shahnewaz\Redprint\Http\Controllers;
+namespace Shahnewaz\RedprintNg\Http\Controllers;
 
 use DB;
 use Redprint;
@@ -8,10 +8,10 @@ use File;
 use Storage;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Shahnewaz\Redprint\Services\BuilderService;
-use Shahnewaz\Redprint\Services\BuilEditService;
-use Shahnewaz\Redprint\Services\MigratorService;
-use Shahnewaz\Redprint\Http\Requests\BuilderRequest;
+use Shahnewaz\RedprintNg\Services\BuilderService;
+use Shahnewaz\RedprintNg\Services\BuilEditService;
+use Shahnewaz\RedprintNg\Services\MigratorService;
+use Shahnewaz\RedprintNg\Http\Requests\BuilderRequest;
 
 class BuilderController extends Controller
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Shahnewaz\Redprint\Console\Commands;
+namespace Shahnewaz\RedprintNg\Console\Commands;
 
 use Artisan;
 use Illuminate\Console\Command;

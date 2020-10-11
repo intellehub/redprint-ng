@@ -1,5 +1,5 @@
 <?php
-namespace Shahnewaz\Redprint\Exceptions;
+namespace Shahnewaz\RedprintNg\Exceptions;
 
 class BuildProcessException extends \Exception {
     public function __construct ($message = null, $code = 422) {

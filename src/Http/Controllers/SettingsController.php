@@ -1,10 +1,10 @@
 <?php
 
-namespace Shahnewaz\Redprint\Http\Controllers;
+namespace Shahnewaz\RedprintNg\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Shahnewaz\Redprint\Services\SettingsService;
+use Shahnewaz\RedprintNg\Services\SettingsService;
 
 class SettingsController extends Controller
 {

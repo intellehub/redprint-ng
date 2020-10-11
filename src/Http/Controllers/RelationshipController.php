@@ -1,6 +1,6 @@
 <?php
 
-namespace Shahnewaz\Redprint\Http\Controllers;
+namespace Shahnewaz\RedprintNg\Http\Controllers;
 
 use Redprint;
 use Redprintship;

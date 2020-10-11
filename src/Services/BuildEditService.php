@@ -1,5 +1,5 @@
 <?php
-namespace Shahnewaz\Redprint\Services;
+namespace Shahnewaz\RedprintNg\Services;
 
 use File;
 use Schema;
@@ -14,8 +14,8 @@ use Illuminate\Http\Request;
 use Monolog\Handler\StreamHandler;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Filesystem\Filesystem;
-use Shahnewaz\Redprint\Database as RedprintDatabase;
-use Shahnewaz\Redprint\Exceptions\BuildProcessException;
+use Shahnewaz\RedprintNg\Database as RedprintDatabase;
+use Shahnewaz\RedprintNg\Exceptions\BuildProcessException;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 
 class BuilEditService {

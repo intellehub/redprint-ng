@@ -1,6 +1,6 @@
 <?php
 
-namespace Shahnewaz\Redprint\Http\Controllers;
+namespace Shahnewaz\RedprintNg\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;

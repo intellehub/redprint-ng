@@ -1,11 +1,11 @@
 <?php
 
-namespace Shahnewaz\Redprint\Providers;
+namespace Shahnewaz\RedprintNg\Providers;
 
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Support\ServiceProvider;
-use Shahnewaz\Redprint\Console\Commands\Clean;
-use Shahnewaz\Redprint\Services\RedprintService;
+use Shahnewaz\RedprintNg\Console\Commands\Clean;
+use Shahnewaz\RedprintNg\Services\RedprintService;
 
 class RedprintServiceProvider extends ServiceProvider
 {
@@ -45,7 +45,7 @@ class RedprintServiceProvider extends ServiceProvider
         $this->mergeConfigFrom($this->packagePath('config/redprint_license.php'), 'redprint_license');
 
         // Add route middlewares
-        $this->app['router']->aliasMiddleware('redprint', \Shahnewaz\Redprint\Http\Middleware\Redprint::class);
+        $this->app['router']->aliasMiddleware('redprint', \Shahnewaz\RedprintNg\Http\Middleware\Redprint::class);
 
         // Register Redprint Service
         $this->app->singleton('redprint', function ($app) {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Shahnewaz\Redprint\Facades;
+namespace Shahnewaz\RedprintNg\Facades;
 
 use Illuminate\Support\Facades\Facade;
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Shahnewaz\Redprint\Http\Middleware;
+namespace Shahnewaz\RedprintNg\Http\Middleware;
 
 use Closure;
 

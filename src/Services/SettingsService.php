@@ -1,5 +1,5 @@
 <?php
-namespace Shahnewaz\Redprint\Services;
+namespace Shahnewaz\RedprintNg\Services;
 
 use Config;
 use Validator;
@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Filesystem\Filesystem;
 use Jackiedo\DotenvEditor\Facades\DotenvEditor;
 use October\Rain\Config\DataWriter\Rewrite as ConfigRewrite;
-use Shahnewaz\Redprint\Exceptions\BuildProcessException;
+use Shahnewaz\RedprintNg\Exceptions\BuildProcessException;
 
 class SettingsService {
 

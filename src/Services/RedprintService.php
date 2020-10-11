@@ -1,7 +1,7 @@
 <?php
-namespace Shahnewaz\Redprint\Services;
+namespace Shahnewaz\RedprintNg\Services;
 
-use Shahnewaz\Redprint\Database;
+use Shahnewaz\RedprintNg\Database;
 
 class RedprintService
 {
