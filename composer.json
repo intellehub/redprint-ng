@@ -19,7 +19,7 @@
     "shah-newaz/redprint-unity-ng": "^1.0",
     "squizlabs/php_codesniffer": "3.*",
     "jackiedo/dotenv-editor": "1.*",
-    "shah-newaz/laravel-config-writer": "^3.0.1"
+    "shah-newaz/laravel-config-writer": "^4.0.0"
   },
   "require-dev": {
   },
