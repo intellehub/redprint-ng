@@ -1,0 +1,20 @@
+<template>
+    <{{layout}}>
+        <div class="mx-auto">
+            <router-view v-slot="{ Component, route }">
+                <component :is="Component" :key="route.path"/>
+            </router-view>
+        </div>
+    </{{layout}}>
+</template>
+
+<script>
+import {{layout}} from "@/layouts/{{layout}}.vue";
+
+export default {
+    name: '{{modelName}}Page',
+    components: {
+        {{layout}}
+    }
+}
+</script> 

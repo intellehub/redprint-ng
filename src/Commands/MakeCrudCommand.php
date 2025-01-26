@@ -11,7 +11,8 @@ class MakeCrudCommand extends Command
         {--model= : The name of the model}
         {--namespace= : The namespace for the controller}
         {--route-prefix= : The route prefix}
-        {--soft-deletes=false : Whether to include soft deletes}';
+        {--soft-deletes=false : Whether to include soft deletes}
+        {--layout= : The layout component to wrap the page with}';
 
     protected $description = 'Create a complete CRUD setup including model, controller, views, and routes';
 
@@ -24,10 +25,16 @@ class MakeCrudCommand extends Command
             $namespace = $this->option('namespace');
             $routePrefix = $this->option('route-prefix');
             $softDeletes = $this->option('soft-deletes') === 'true';
+            $layout = $this->option('layout');
 
             if (empty($model)) {
                 $this->error('Model name is required!');
                 return 1;
+            }
+
+            // Validate layout if provided
+            if ($layout) {
+                $this->validateLayout($layout);
             }
 
             // Copy common components first
@@ -46,7 +53,7 @@ class MakeCrudCommand extends Command
             $this->generateMigration($model, $softDeletes);
             
             // Generate Vue Components
-            $this->generateVueComponents($model);
+            $this->generateVueComponents($model, $layout);
             
             // Update Routes
             $this->updateRoutes($model, $namespace, $routePrefix);
@@ -241,11 +248,53 @@ class MakeCrudCommand extends Command
         file_put_contents(database_path("migrations/{$fileName}"), $stub);
     }
 
-    private function generateVueComponents($model)
+    private function validateLayout($layout)
+    {
+        if (!$layout) {
+            return;
+        }
+
+        $layoutPath = resource_path("js/layouts/{$layout}.vue");
+        if (!file_exists($layoutPath)) {
+            throw new \Exception("Layout file not found at: {$layoutPath}");
+        }
+    }
+
+    private function generatePageComponent($model, $layout = null)
+    {
+        $pagesPath = resource_path('js/pages');
+        $filePath = "{$pagesPath}/{$model}.vue";
+
+        if (file_exists($filePath)) {
+            $this->warn("{$model} page component already exists. Skipping...");
+            return;
+        }
+
+        if (!file_exists($pagesPath)) {
+            mkdir($pagesPath, 0777, true);
+        }
+
+        $stub = file_get_contents(__DIR__ . '/../stubs/vue/page.stub');
+
+        if ($layout) {
+            $stub = file_get_contents(__DIR__ . '/../stubs/vue/page-with-layout.stub');
+            $stub = str_replace(['{{layout}}'], [$layout], $stub);
+        }
+
+        $stub = str_replace(['{{modelName}}'], [$model], $stub);
+        
+        file_put_contents($filePath, $stub);
+        $this->info("{$model} page component created successfully.");
+    }
+
+    private function generateVueComponents($model, $layout = null)
     {
         $routeName = Str::plural(Str::snake($model));
         $routePrefix = $this->option('route-prefix') ? $this->option('route-prefix') . '/' : '';
         
+        // Generate page component with or without layout
+        $this->generatePageComponent($model, $layout);
+
         $pagesPath = resource_path('js/pages');
         $componentsPath = resource_path("js/components/{$model}");
         
