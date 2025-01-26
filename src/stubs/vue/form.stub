@@ -20,7 +20,7 @@
                     @click.prevent="save"
                 >
                     {{ $t('common.save') }}
-                </button>
+                </el-button>
             </div>
         </form>
     </div>

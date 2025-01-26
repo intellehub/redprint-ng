@@ -71,6 +71,7 @@
 <script>
 {{axiosImport}}
 import _ from 'lodash'
+import Empty from "@/components/Common/Empty.vue"
 
 export default {
     name: '{{modelName}}Index',
@@ -78,11 +79,13 @@ export default {
         return {
             items: [],
             searchQuery: '',
+            paginationTotal: 0,
             loading: false
         }
     },
     methods: {
         fetchItems() {
+            var self = this
             this.loading = true
             {{axiosInstance}}.get(`/api/{{routePrefix}}/{{routePath}}`, {
                 params: {
@@ -90,11 +93,13 @@ export default {
                 }
             })
             .then(response => {
-                this.items = response.data.data
-                this.loading = false
+                self.items = response.data.data
+                self.paginationTotal = response.data.meta.total
+                self.loading = false
             })
-            .catch(() => {
-                this.loading = false
+            .catch((error) => {
+                self.loading = false
+                // console.log(error)
             })
         },
         handleSearch: _.debounce(function() {
