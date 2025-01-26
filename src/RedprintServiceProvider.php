@@ -1,10 +1,10 @@
 <?php
 
-namespace Laraspa\Redprint;
+namespace Shahnewaz\RedprintNg;
 
 use Illuminate\Support\ServiceProvider;
-use Laraspa\Redprint\Commands\MakeCrudCommand;
-use Laraspa\Redprint\Commands\MakeVueCommand;
+use Shahnewaz\RedprintNg\Commands\MakeCrudCommand;
+use Shahnewaz\RedprintNg\Commands\MakeVueCommand;
 
 class RedprintServiceProvider extends ServiceProvider
 {
