@@ -3,11 +3,10 @@
         <div class="px-4 sm:px-6 lg:px-8">
             <div class="sm:flex sm:items-center">
                 <div class="sm:flex-auto">
-
                     <div class="mt-2">
                         <input
                             type="text"
-                            v-model="searchQuery"
+                            v-model="searchQuery.name"
                             @input="handleSearch"
                             :placeholder="$t('common.search')"
                             class="w-full rounded-lg border-[1.5px] text-black border-stroke bg-transparent py-2 px-5 font-normal outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:text-white dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
@@ -56,7 +55,14 @@
                         </el-container>
                         <Empty v-if="!loading && items.length === 0" :detail="$t('common.no_data')"></Empty>
                         <div class="grid grid-cols-12 bg-[#F9FAFB] px-5 py-4 dark:bg-meta-4 lg:px-7.5 2xl:px-11" v-if="!loading">
-                            <el-pagination @current-change="fetchItems" :hide-on-single-page="true" background layout="prev, pager, next" :total="paginationTotal" />
+                            <el-pagination 
+                                @current-change="handlePageChange" 
+                                :current-page="currentPage"
+                                :hide-on-single-page="true" 
+                                background 
+                                layout="prev, pager, next" 
+                                :total="paginationTotal" 
+                            />
                         </div>
                     </div>
                 </div>
@@ -75,37 +81,44 @@ export default {
     data() {
         return {
             items: [],
-            searchQuery: '',
+            searchQuery: {
+                name: ''
+            },
+            currentPage: 1,
             paginationTotal: 0,
             loading: false
         }
     },
     methods: {
         fetchItems() {
-            var self = this
             this.loading = true
-            {{axiosInstance}}.get(`{{routePath}}`, {
+            {{axiosInstance}}.get(`/api/{{routePrefix}}/{{routePath}}`, {
                 params: {
-                    name: this.searchQuery
+                    ...this.searchQuery,
+                    page: this.currentPage
                 }
             })
             .then(response => {
-                self.items = response.data.data
-                self.paginationTotal = response.data.meta.total
-                self.loading = false
+                this.items = response.data.data
+                this.paginationTotal = response.data.meta.total
+                this.loading = false
             })
-            .catch((error) => {
-                self.loading = false
-                // console.log(error)
+            .catch(() => {
+                this.loading = false
             })
         },
         handleSearch: _.debounce(function() {
+            this.currentPage = 1 // Reset to first page when searching
             this.fetchItems()
         }, 300),
+        handlePageChange(page) {
+            this.currentPage = page
+            this.fetchItems()
+        },
         deleteItem(id) {
             if (!confirm('Are you sure you want to delete this item?')) return
 
-            {{axiosInstance}}.delete(`{{routePath}}/${id}`)
+            {{axiosInstance}}.delete(`/api/{{routePrefix}}/{{routePath}}/${id}`)
                 .then(() => {
                     this.fetchItems()
                 })
