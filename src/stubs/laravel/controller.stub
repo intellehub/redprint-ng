@@ -17,9 +17,10 @@ class {{modelName}}Controller extends Controller
             $query->where('name', 'like', '%' . $request->get('name') . '%');
         }
 
-        return {{modelName}}Resource::collection(
+        $data = {{modelName}}Resource::collection(
             $query->paginate($request->get('per_page', 15))
         );
+        return response()->json($data);
     }
 
     public function save(Request $request)
@@ -35,7 +36,8 @@ class {{modelName}}Controller extends Controller
             $model = {{modelName}}::create($request->all());
         }
 
-        return new {{modelName}}Resource($model);
+        $data = new {{modelName}}Resource($model);
+        return response()->json($data);
     }
 
     public function delete($id)
@@ -43,7 +45,7 @@ class {{modelName}}Controller extends Controller
         $model = {{modelName}}::findOrFail($id);
         $model->delete();
         
-        return response()->json(['message' => '{{modelName}} deleted successfully']);
+        return response()->json(['message' => '{{modelName}} deleted successfully'], 204);
     }
 
     {{softDeleteMethods}}

@@ -189,7 +189,7 @@ class MakeCrudCommand extends Command
             \$model = {$model}::withTrashed()->findOrFail(\$id);
             \$model->forceDelete();
             
-            return response()->json(['message' => '{$model} permanently deleted']);
+            return response()->json(['message' => '{$model} permanently deleted'], 204);
         }";
     }
 
@@ -225,7 +225,7 @@ class MakeCrudCommand extends Command
 
     private function generateMigration($model, $softDeletes)
     {
-        $stub = file_get_contents(__DIR__ . '/../stubs/migration.stub');
+        $stub = file_get_contents(__DIR__ . '/../stubs/laravel/migration.stub');
         
         $tableName = Str::plural(Str::snake($model));
         $softDeletesColumn = $softDeletes ? '$table->softDeletes();' : '';
