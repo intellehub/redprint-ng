@@ -17,10 +17,9 @@ class {{modelName}}Controller extends Controller
             $query->where('name', 'like', '%' . $request->get('name') . '%');
         }
 
-        $data = {{modelName}}Resource::collection(
+        return {{modelName}}Resource::collection(
             $query->paginate($request->get('per_page', 15))
         );
-        return response()->json($data);
     }
 
     public function save(Request $request)
