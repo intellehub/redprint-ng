@@ -1,46 +1,36 @@
 {
-  "name": "shah-newaz/redprint-ng",
-  "description": "Redprint Laravel App Builder",
-  "keywords": ["laravel", "admin", "backend", "crud", "builder", "administrator"],
-  "license": "MIT",
-  "authors": [
-    {
-      "name": "Shahnewaz Rifat",
-      "email": "rifat_rifats@live.com"
-    }
-  ],
-  "require": {
-    "php": "^7.3",
-    "laravel/framework": "^8.0",
-    "vlucas/phpdotenv": "^5.2",
-    "shah-newaz/codecanyon-license-ng": "^1.0",
-    "shah-newaz/permissible-ng": "^1.0",
-    "intervention/image": "^2.5",
-    "shah-newaz/redprint-unity-ng": "^1.0",
-    "squizlabs/php_codesniffer": "3.*",
-    "jackiedo/dotenv-editor": "1.*",
-    "shah-newaz/laravel-config-writer": "^4.0.0"
-  },
-  "require-dev": {
-  },
-  "autoload": {
-    "psr-4": {
-        "Shahnewaz\\RedprintNg\\": "src/"
+    "name": "shah-newaz/redprint-ng",
+    "description": "A Laravel package for generating CRUD operations with Vue.js frontend",
+    "type": "library",
+    "keywords": [
+        "laravel",
+        "api",
+        "crud",
+        "code generation"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Shahnewaz Rifat",
+            "email": "rifat_rifats@live.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^11.0"
     },
-    "files": [
-        "src/helpers/general.php"
-    ]
-  },
-  "extra": {
-    "laravel": {
-      "providers": [
-          "Shahnewaz\\RedprintNg\\Providers\\RedprintServiceProvider",
-          "Shahnewaz\\RedprintNg\\Providers\\RedprintshipServiceProvider"
-      ],
-      "aliases": {
-        "Redprint": "Shahnewaz\\RedprintNg\\Facades\\RedprintFacade",
-        "Redprintship": "Shahnewaz\\RedprintNg\\Facades\\RedprintshipFacade"
-      }
-    }
-  }
+    "autoload": {
+        "psr-4": {
+            "Shahnewaz\\RedprintNg\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Shahnewaz\\RedprintNg\\RedprintServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }

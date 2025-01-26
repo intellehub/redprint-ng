@@ -1,0 +1,29 @@
+<template>
+    <div v-if="messages">
+        <p v-for="message in messages" :key="message" class="mt-2 text-sm text-[#CD5D5D] form-error">{{ message }}</p>
+    </div>
+</template>
+
+<script>
+import _ from 'lodash'
+
+export default {
+    props: ['errors', 'field'],
+    name: "FormError",
+    data() {
+        return {}
+    },
+    computed: {
+        messages() {
+            let err = _.find(this.errors, (o) => {
+                return o.field === this.field
+            })
+            return err?.messages
+        }
+    }
+}
+</script>
+
+<style scoped>
+
+</style>

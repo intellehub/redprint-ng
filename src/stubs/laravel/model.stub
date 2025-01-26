@@ -1,0 +1,15 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+{{softDeletes}}
+
+class {{modelName}} extends Model
+{
+    {{useSoftDeletes}}
+
+    protected $fillable = [
+        'name',
+    ];
+}

@@ -1,5 +1,0 @@
-        <div class="form-group has-feedback COL_XS COL_MD COL_LG {{ $errors->has('{{FIELD_NAME}}') ? 'has-error' : '' }}">
-            <div class="checkbox">
-              <br /><label><input type="checkbox" name="{{FIELD_NAME}}" value="1">{{FIELD_NAME_LABEL}}</label>
-            </div>
-        </div>

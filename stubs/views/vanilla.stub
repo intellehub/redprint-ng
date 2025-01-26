@@ -1,5 +1,0 @@
-@extends(config('main-app-layout', 'redprintUnity::page'))
-
-@section('content')
-
-@stop

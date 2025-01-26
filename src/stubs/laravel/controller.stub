@@ -1,0 +1,50 @@
+<?php
+
+namespace {{namespace}};
+
+use App\Http\Controllers\Controller;
+use App\Models\{{modelName}};
+use App\Http\Resources\{{modelName}}Resource;
+use Illuminate\Http\Request;
+
+class {{modelName}}Controller extends Controller
+{
+    public function getIndex(Request $request)
+    {
+        $query = {{modelName}}::query();
+
+        if ($request->has('name')) {
+            $query->where('name', 'like', '%' . $request->get('name') . '%');
+        }
+
+        return {{modelName}}Resource::collection(
+            $query->paginate($request->get('per_page', 15))
+        );
+    }
+
+    public function save(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        if ($request->has('id')) {
+            $model = {{modelName}}::findOrFail($request->id);
+            $model->update($request->all());
+        } else {
+            $model = {{modelName}}::create($request->all());
+        }
+
+        return new {{modelName}}Resource($model);
+    }
+
+    public function delete($id)
+    {
+        $model = {{modelName}}::findOrFail($id);
+        $model->delete();
+        
+        return response()->json(['message' => '{{modelName}} deleted successfully']);
+    }
+
+    {{softDeleteMethods}}
+}

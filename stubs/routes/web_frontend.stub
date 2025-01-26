@@ -1,2 +1,0 @@
-    // {{MODEL_CLASS}} Frontend Route
-    Route::get('/{{MODEL_ENTITIES}}', '{{ROUTE_NAMESPACE}}{{CONTROLLER_CLASS}}@index')->name('{{MODEL_ENTITY}}.frontend.index');

@@ -1,0 +1,96 @@
+<template>
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">{{ isEditing ? 'Edit' : 'New' }} {{modelName}}</h1>
+
+        <form @submit.prevent="save" class="space-y-4">
+            <div class="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
+                <label class="block text-sm font-medium text-gray-700">Name</label>
+                <InputGroup v-model="form.name" label="" type="text" custom-classes="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"/>
+                <form-error :errors="validationErrors" field="profile.username"></form-error>
+            </div>
+
+            <div class="flex justify-end space-x-3">
+                <el-button :loading="loading" @click.prevent="cancel" type="danger" plain>
+                    {{ $t('common.cancel') }}
+                </el-button>
+                <el-button
+                    :loading="loading" 
+                    type="primary"
+                    :disabled="loading"
+                    @click.prevent="save"
+                >
+                    {{ $t('common.save') }}
+                </button>
+            </div>
+        </form>
+    </div>
+</template>
+
+<script>
+{{axiosImport}}
+import InputGroup from '@/components/Common/InputGroup.vue'
+
+export default {
+    name: '{{modelName}}Form',
+    props: {
+        id: {
+            type: [Number, String],
+            default: null
+        }
+    },
+    data() {
+        return {
+            form: {
+                name: ''
+            },
+            loading: false,
+            mainError: null,
+            validationErrors: [],
+            isEditing: false
+        }
+    },
+    methods: {
+        fetchItem() {
+            var self = this
+            if (!this.id) return
+            this.loading = true
+            {{axiosInstance}}.get(`/api/{{routePrefix}}/{{routePath}}/${this.id}`).then((response) => {
+                this.form = response.data.data
+                this.isEditing = true
+                this.loading = false
+            }).catch((error) => {
+                self.loading = false
+                // console.log(error)
+            })
+        },
+        async save() {
+            var self = this
+            const payload = { ...this.form }
+            if (this.isEditing) {
+                payload.id = this.id
+            }
+
+            {{axiosInstance}}.post(`/api/{{routePrefix}}/{{routePath}}/save`, payload).then(() => {
+                self.loading = false
+                self.$message({type: 'success', message: self.$t('messages.save_success')})
+                self.$router.push({ name: 'pages.{{routeName}}.index' })
+            }).catch((e) => {
+                self.$message({type: 'error', message: self.$t('messages.save_error')})
+                self.loading = false
+                if (e.response.status === 422) {
+                    self.validationErrors = self.$parseValidationErrors(self.validationErrors, e.response.data.errors)
+                }
+            })
+        },
+        cancel() {
+            this.$router.push({ name: 'pages.{{routeName}}.index' })
+        },
+    },
+    mounted() {
+        if (this.$route.query.id) {
+            this.id = this.$route.query.id
+            this.fetchItem()
+        }
+    }
+}
+</script>
