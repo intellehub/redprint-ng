@@ -423,12 +423,6 @@ import {$model}Form from \"@/components/{$model}/Form.vue\";
             ? "App\\Http\\Controllers\\{$namespace}\\{$model}Controller" 
             : "App\\Http\\Controllers\\{$model}Controller";
 
-        // Check if routes already exist
-        if (strpos($content, "{$routeName}/save") !== false) {
-            $this->warn("Routes for {$model} already exist. Skipping...");
-            return;
-        }
-
         $routes = "
 Route::prefix('" . ($routePrefix ? $routePrefix : '') . "')->middleware(['auth:api'])->group(function () {
     Route::get('{$routeName}', [{$controllerNamespace}::class, 'getIndex'])->name('{$routeName}.index');
@@ -443,7 +437,19 @@ Route::prefix('" . ($routePrefix ? $routePrefix : '') . "')->middleware(['auth:a
         $routes .= "
 });";
 
-        file_put_contents($routesFile, $content . $routes);
+        // Check for fallback route
+        if (strpos($content, 'Route::fallback') !== false) {
+            // Find the position of the fallback route
+            $fallbackPosition = strpos($content, 'Route::fallback');
+            
+            // Insert new routes before the fallback
+            $content = substr_replace($content, $routes . "\n\n", $fallbackPosition, 0);
+        } else {
+            // If no fallback route, append to the end
+            $content .= $routes;
+        }
+
+        file_put_contents($routesFile, $content);
         $this->info("API routes for {$model} added successfully.");
     }
 
