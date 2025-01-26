@@ -70,6 +70,7 @@
 
 <script>
 {{axiosImport}}
+import _ from 'lodash'
 
 export default {
     name: '{{modelName}}Index',
@@ -96,7 +97,7 @@ export default {
                 this.loading = false
             })
         },
-        handleSearch: debounce(function() {
+        handleSearch: _.debounce(function() {
             this.fetchItems()
         }, 300),
         deleteItem(id) {

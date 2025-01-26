@@ -29,20 +29,16 @@
 <script>
 {{axiosImport}}
 import InputGroup from '@/components/Common/InputGroup.vue'
+import FormError from '@/components/Common/FormError.vue'
 
 export default {
     name: '{{modelName}}Form',
-    props: {
-        id: {
-            type: [Number, String],
-            default: null
-        }
-    },
     data() {
         return {
             form: {
                 name: ''
             },
+            id: null,
             loading: false,
             mainError: null,
             validationErrors: [],
@@ -91,6 +87,10 @@ export default {
             this.id = this.$route.query.id
             this.fetchItem()
         }
+    },
+    components: {
+        InputGroup,
+        FormError
     }
 }
 </script>

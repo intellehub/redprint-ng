@@ -77,7 +77,8 @@ class MakeCrudCommand extends Command
             'axios' => 'Axios',
             'vue' => 'Vue.js',
             'vue-router' => 'Vue Router',
-            'vue-i18n' => 'Vue I18n'
+            'vue-i18n' => 'Vue I18n',
+            'lodash' => 'Lodash',
         ];
 
         $missing = [];
