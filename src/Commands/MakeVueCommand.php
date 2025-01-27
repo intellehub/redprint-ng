@@ -1,6 +1,6 @@
 <?php
 
-namespace Laraspa\Redprint\Commands;
+namespace Shahnewaz\RedprintNg\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
