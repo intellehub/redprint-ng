@@ -321,31 +321,60 @@ class MakeCrudCommand extends Command
             }
 
             $stub = file_get_contents(__DIR__ . "/../stubs/vue/{$component['stub']}");
-            $stub = str_replace(
-                [
-                    '{{modelName}}',
-                    '{{routeName}}',
-                    '{{routePrefix}}',
-                    '{{routePath}}',
-                    '{{axiosInstance}}',
-                    '{{axiosImport}}'
-                ],
-                [
-                    $model,
-                    $routeName,
-                    $routePrefix,
-                    $routeName,
-                    $axiosInstance,
-                    $axiosInstance === 'axios' ? "import axios from 'axios'" : ''
-                ],
-                $stub
-            );
+            $stub = $this->processStub($stub, [
+                '{{modelName}}' => $model,
+                '{{routeName}}' => $routeName,
+                '{{routePrefix}}' => $routePrefix,
+                '{{routePath}}' => $routeName,
+                '{{axiosInstance}}' => $axiosInstance,
+                '{{axiosImport}}' => '',
+                '{{axiosCall}}' => $axiosInstance
+            ], $axiosInstance);
             
             file_put_contents($component['path'], $stub);
             $this->info("{$model} {$component['name']} component created successfully.");
         }
 
         $this->updateVueRouter($model, $routeName);
+    }
+
+    private function processStub($stub, $replacements, $axiosInstance)
+    {
+        // Replace all standard placeholders
+        $stub = str_replace(
+            array_keys($replacements),
+            array_values($replacements),
+            $stub
+        );
+
+        // Handle axios instance conditionals
+        if ($axiosInstance === 'axios') {
+            $stub = str_replace(
+                [
+                    '{{axiosImport}}',
+                    '{{axiosCall}}'
+                ],
+                [
+                    "import axios from 'axios'\n\nconst api = axios.create({\n    baseURL: `${window.location.protocol}//${window.location.host}/api/{{routePrefix}}/`\n})",
+                    'api'
+                ],
+                $stub
+            );
+        } else {
+            $stub = str_replace(
+                [
+                    '{{axiosImport}}',
+                    '{{axiosCall}}'
+                ],
+                [
+                    '',
+                    $axiosInstance
+                ],
+                $stub
+            );
+        }
+
+        return $stub;
     }
 
     private function updateVueRouter($model, $routeName)
