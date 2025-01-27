@@ -92,7 +92,7 @@ export default {
     methods: {
         fetchItems() {
             this.loading = true
-            {{axiosInstance}}.get(`/api/{{routePrefix}}/{{routePath}}`, {
+            {{axiosInstance}}.get(`{{routePath}}`, {
                 params: {
                     ...this.searchQuery,
                     page: this.currentPage
@@ -118,7 +118,7 @@ export default {
         deleteItem(id) {
             if (!confirm('Are you sure you want to delete this item?')) return
 
-            {{axiosInstance}}.delete(`/api/{{routePrefix}}/{{routePath}}/${id}`)
+            {{axiosInstance}}.delete(`{{routePath}}/${id}`)
                 .then(() => {
                     this.fetchItems()
                 })
