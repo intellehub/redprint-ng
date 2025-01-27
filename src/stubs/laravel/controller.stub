@@ -18,8 +18,14 @@ class {{modelName}}Controller extends Controller
         }
 
         return {{modelName}}Resource::collection(
-            $query->paginate($request->get('per_page', 10))
+            $query->paginate($request->get('per_page', 15))
         );
+    }
+
+    public function show($id)
+    {
+        $model = {{modelName}}::findOrFail($id);
+        return new {{modelName}}Resource($model);
     }
 
     public function save(Request $request)
@@ -35,8 +41,7 @@ class {{modelName}}Controller extends Controller
             $model = {{modelName}}::create($request->all());
         }
 
-        $data = new {{modelName}}Resource($model);
-        return response()->json($data);
+        return new {{modelName}}Resource($model);
     }
 
     public function delete($id)
@@ -44,7 +49,7 @@ class {{modelName}}Controller extends Controller
         $model = {{modelName}}::findOrFail($id);
         $model->delete();
         
-        return response()->json(['message' => '{{modelName}} deleted successfully'], 204);
+        return response()->json(['message' => '{{modelName}} deleted successfully']);
     }
 
     {{softDeleteMethods}}
