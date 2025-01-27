@@ -91,7 +91,7 @@ class MakeVueCommand extends Command
 
 <script>
 export default {
-    name: '{$componentName}',
+    name: `{$componentName}`,
     data() {
         return {}
     },
@@ -123,7 +123,7 @@ VUE;
 import {$layout} from "@/layouts/{$layout}.vue"
 
 export default {
-    name: '{$componentName}',
+    name: `{$componentName}`,
     components: {
         {$layout}
     },
@@ -154,7 +154,7 @@ VUE;
 
 <script>
 export default {
-    name: '{$componentName}'
+    name: `{$componentName}`
 }
 </script>
 VUE;
@@ -177,7 +177,7 @@ VUE;
 import {$layout} from "@/layouts/{$layout}.vue"
 
 export default {
-    name: '{$componentName}',
+    name: `{$componentName}`,
     components: {
         {$layout}
     }
