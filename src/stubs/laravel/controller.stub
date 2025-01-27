@@ -18,7 +18,7 @@ class {{modelName}}Controller extends Controller
         }
 
         return {{modelName}}Resource::collection(
-            $query->paginate($request->get('per_page', 15))
+            $query->paginate($request->get('per_page', 10))
         );
     }
 
