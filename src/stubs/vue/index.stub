@@ -75,7 +75,7 @@
 
 <script>
 {{axiosImport}}
-import _ from 'lodash'
+import {_} from 'lodash'
 import Empty from "@/components/Common/Empty.vue"
 
 export default {
