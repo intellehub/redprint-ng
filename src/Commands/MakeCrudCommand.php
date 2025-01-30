@@ -14,7 +14,23 @@ class MakeCrudCommand extends Command
         {--soft-deletes=false : Whether to include soft deletes}
         {--layout= : The layout component to wrap the page with}';
 
-    protected $description = 'Create a complete CRUD setup including model, controller, views, and routes';
+    protected $description = 'Create a new CRUD module';
+
+    private $supportedDataTypes = [
+        'string',
+        'text',
+        'integer',
+        'bigInteger',
+        'float',
+        'double',
+        'decimal',
+        'boolean',
+        'date',
+        'dateTime',
+        'time',
+        'json',
+        'enum'
+    ];
 
     public function handle()
     {
@@ -50,10 +66,11 @@ class MakeCrudCommand extends Command
             $this->generateResource($model);
             
             // Generate Migration
-            $this->generateMigration($model, $softDeletes);
+            $columns = $this->promptForColumns();
+            $this->generateMigration($model, $softDeletes, $columns);
             
             // Generate Vue Components
-            $this->generateVueComponents($model, $layout);
+            $this->generateVueComponents($model, $layout, $columns);
             
             // Update Routes
             $this->updateRoutes($model, $namespace, $routePrefix);
@@ -231,21 +248,97 @@ class MakeCrudCommand extends Command
         $this->info("Resource {$model}Resource created successfully.");
     }
 
-    private function generateMigration($model, $softDeletes)
+    private function promptForColumns()
+    {
+        $columnCount = (int) $this->ask('How many columns do you want to add?');
+        $columns = [];
+
+        for ($i = 0; $i < $columnCount; $i++) {
+            $this->info("\nColumn " . ($i + 1) . " details:");
+            
+            $name = $this->ask('Column Name');
+            
+            $type = $this->choice(
+                'Data Type',
+                $this->supportedDataTypes,
+                0
+            );
+
+            // Additional prompts for enum type
+            $enumValues = [];
+            if ($type === 'enum') {
+                $enumValuesStr = $this->ask('Enter enum values (comma-separated)');
+                $enumValues = array_map('trim', explode(',', $enumValuesStr));
+            }
+
+            $nullable = $this->confirm('Is Nullable?', false);
+            
+            $default = $this->ask('Default value (press enter to skip)', null);
+
+            $columns[] = [
+                'name' => $name,
+                'type' => $type,
+                'nullable' => $nullable,
+                'default' => $default,
+                'enumValues' => $enumValues
+            ];
+        }
+
+        return $columns;
+    }
+
+    private function generateMigration($model, $softDeletes, $columns)
     {
         $stub = file_get_contents(__DIR__ . '/../stubs/laravel/migration.stub');
         
         $tableName = Str::plural(Str::snake($model));
-        $softDeletesColumn = $softDeletes ? '$table->softDeletes();' : '';
+        $columnDefinitions = $this->generateColumnDefinitions($columns);
+        $softDeletesColumn = $softDeletes ? "\$table->softDeletes();" : '';
 
         $stub = str_replace(
-            ['{{tableName}}', '{{softDeletesColumn}}'],
-            [$tableName, $softDeletesColumn],
+            [
+                '{{tableName}}', 
+                '{{columnDefinitions}}',
+                '{{softDeletesColumn}}'
+            ],
+            [
+                $tableName, 
+                $columnDefinitions,
+                $softDeletesColumn
+            ],
             $stub
         );
 
         $fileName = date('Y_m_d_His') . "_create_{$tableName}_table.php";
         file_put_contents(database_path("migrations/{$fileName}"), $stub);
+    }
+
+    private function generateColumnDefinitions($columns)
+    {
+        $definitions = [];
+        
+        foreach ($columns as $column) {
+            $def = "\$table->{$column['type']}('{$column['name']}')";
+            
+            if ($column['type'] === 'enum') {
+                $enumValues = array_map(function($value) {
+                    return "'{$value}'";
+                }, $column['enumValues']);
+                $def = "\$table->enum('{$column['name']}', [" . implode(', ', $enumValues) . "])";
+            }
+            
+            if ($column['nullable']) {
+                $def .= "->nullable()";
+            }
+            
+            if ($column['default'] !== null) {
+                $def .= "->default('{$column['default']}')";
+            }
+            
+            $definitions[] = str_pad("            {$def};", 12, " ");
+        }
+        
+        return implode("\n", $definitions);
     }
 
     private function validateLayout($layout)
@@ -287,7 +380,7 @@ class MakeCrudCommand extends Command
         $this->info("{$model} page component created successfully.");
     }
 
-    private function generateVueComponents($model, $layout = null)
+    private function generateVueComponents($model, $layout, $columns)
     {
         $routeName = Str::plural(Str::snake($model));
         $routePrefix = $this->option('route-prefix') ? $this->option('route-prefix') . '/' : '';
@@ -314,6 +407,15 @@ class MakeCrudCommand extends Command
 
         $axiosInstance = $this->getAxiosInstance();
         
+        $replacements = [
+            '{{modelName}}' => $model,
+            '{{routeName}}' => $routeName,
+            '{{routePrefix}}' => $routePrefix,
+            '{{routePath}}' => $routeName,
+            '{{columns}}' => json_encode($columns)
+        ];
+
+        // Process stubs with columns data
         foreach ($components as $component) {
             if (file_exists($component['path'])) {
                 $this->warn("{$model} {$component['name']} component already exists. Skipping...");
@@ -321,21 +423,13 @@ class MakeCrudCommand extends Command
             }
 
             $stub = file_get_contents(__DIR__ . "/../stubs/vue/{$component['stub']}");
-            $stub = $this->processStub($stub, [
-                '{{modelName}}' => $model,
-                '{{routeName}}' => $routeName,
-                '{{routePrefix}}' => $routePrefix,
-                '{{routePath}}' => $routeName,
-                '{{axiosInstance}}' => $axiosInstance,
-                '{{axiosImport}}' => '',
-                '{{axiosCall}}' => $axiosInstance
-            ], $axiosInstance);
+            $stub = $this->processStub($stub, $replacements, $axiosInstance);
             
             file_put_contents($component['path'], $stub);
             $this->info("{$model} {$component['name']} component created successfully.");
         }
 
-        $this->updateVueRouter($model, $routeName);
+        $this->generateVueRoutes($model);
     }
 
     private function processStub($stub, $replacements, $axiosInstance)
@@ -377,16 +471,21 @@ class MakeCrudCommand extends Command
         return $stub;
     }
 
-    private function updateVueRouter($model, $routeName)
+    private function generateVueRoutes($model)
     {
-        $routerFile = resource_path('js/routes.ts');
-        $content = file_get_contents($routerFile);
-
-        // Check if routes already exist
-        if (strpos($content, "path: '/{$routeName}'") !== false) {
-            $this->warn("Routes for {$model} already exist. Skipping route generation...");
-            return;
+        $routerFile = resource_path(config('redprint.vue_router_location'));
+        
+        if (!file_exists($routerFile)) {
+            throw new \Exception("Vue router file not found at: " . config('redprint.vue_router_location'));
         }
+
+        $content = file_get_contents($routerFile);
+        $routeName = Str::plural(Str::snake($model));
+
+        $imports = "import {$model}Page from \"@/pages/{$model}.vue\";
+import {$model}Index from \"@/components/{$model}/Index.vue\";
+import {$model}Form from \"@/components/{$model}/Form.vue\";
+";
 
         // Find the last import statement
         $lastImportPos = strrpos($content, "import");
@@ -398,14 +497,8 @@ class MakeCrudCommand extends Command
         }
 
         // Add new imports after the last import
-        $imports = "import {$model}Page from \"@/pages/{$model}.vue\";
-import {$model}Index from \"@/components/{$model}/Index.vue\";
-import {$model}Form from \"@/components/{$model}/Form.vue\";
-";
-
         $content = substr_replace($content, $imports, $lastImportPos, 0);
 
-        // Add routes before the last closing bracket
         $routes = "    {
             path: '/{$routeName}',
             name: 'pages.{$routeName}',

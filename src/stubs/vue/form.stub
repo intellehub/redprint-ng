@@ -1,109 +1,143 @@
 <template>
-    <div class="grid grid-cols-1 text-left justify-normal">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">{{ isEditing ? 'Edit' : 'New' }} {{modelName}}</h1>
 
-        <div class="col-span-5 xl:col-span-3 my-5  text-left">
-            <div
-                class="rounded-sm border border-stroke bg-white dark:border-strokedark dark:bg-boxdark"
+        <form @submit.prevent="save" class="space-y-4">
+            {{#each columns}}
+            {{#if this.type === 'boolean'}}
+            <el-checkbox
+                v-model="form.{{this.name}}"
+                :label="$t('common.{{this.name}}')"
+                :true-label="1"
+                :false-label="0"
+            />
+            {{else if this.type === 'enum'}}
+            <el-select
+                v-model="form.{{this.name}}"
+                :placeholder="$t('common.select_{{this.name}}')"
+                class="w-full"
+                {{#if this.nullable}}clearable{{/if}}
             >
-                <div class="flex-row">
-                    <el-alert
-                        v-if="mainError"
-                        :title="$t('messages.save_error')"
-                        type="error"
-                        :description="mainError"
-                        show-icon
-                    />
-                </div>
+                {{#each this.enumValues}}
+                <el-option label="{{this}}" value="{{this}}" />
+                {{/each}}
+            </el-select>
+            {{else if this.type === 'text'}}
+            <el-input
+                v-model="form.{{this.name}}"
+                type="textarea"
+                :rows="3"
+                :placeholder="$t('common.enter_{{this.name}}')"
+            />
+            {{else if this.type === 'date'}}
+            <el-date-picker
+                v-model="form.{{this.name}}"
+                type="date"
+                :placeholder="$t('common.select_{{this.name}}')"
+                class="w-full"
+            />
+            {{else if this.type === 'dateTime'}}
+            <el-date-picker
+                v-model="form.{{this.name}}"
+                type="datetime"
+                :placeholder="$t('common.select_{{this.name}}')"
+                class="w-full"
+            />
+            {{else}}
+            <InputGroup
+                id="{{this.name}}"
+                :label="$t('common.{{this.name}}')"
+                v-model="form.{{this.name}}"
+                :error="errors.{{this.name}}"
+                {{#if this.type === 'integer' || this.type === 'decimal' || this.type === 'float' || this.type === 'double'}}
+                type="number"
+                {{else}}
+                type="text"
+                {{/if}}
+                {{#unless this.nullable}}required{{/unless}}
+            />
+            {{/if}}
+            {{/each}}
 
-                <div class="p-7">
-                    <form @submit.prevent="save">
-
-                        <div class="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
-                            <div class="w-full sm:w-1/2">
-                                <InputGroup id="name" :label="$t('form.name')" type="text" :placeholder="$t('common.name')" v-model="form.name">
-                                </InputGroup>
-                                <form-error :errors="validationErrors" field="name"></form-error>
-                            </div>
-                        </div>
-
-                        <!-- Save and Cancel Buttons -->
-                        <div class="flex justify-end gap-0">
-                            <el-button :loading="loading" @click.prevent="cancel" type="danger" plain>{{ $t('common.cancel') }}</el-button>
-                            <el-button :loading="loading" @click.prevent="save" type="primary" plain>{{ $t('common.save') }}</el-button>
-                        </div>
-                    </form>
-                </div>
+            <div class="flex justify-end space-x-3">
+                <router-link 
+                    :to="{ name: 'pages.{{routeName}}.index' }"
+                    class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                    {{ $t('common.cancel') }}
+                </router-link>
+                <button 
+                    type="submit"
+                    :disabled="loading"
+                    class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+                >
+                    {{ loading ? $t('common.saving') : $t('common.save') }}
+                </button>
             </div>
-        </div>
-
+        </form>
     </div>
 </template>
 
 <script>
 {{axiosImport}}
 import InputGroup from '@/components/Common/InputGroup.vue'
-import FormError from '@/components/Common/FormError.vue'
 
 export default {
     name: '{{modelName}}Form',
+    components: {
+        InputGroup
+    },
     data() {
         return {
             form: {
-                name: ''
+                {{#each columns}}
+                {{this.name}}: {{#if this.default}}{{this.default}}{{else}}null{{/if}},
+                {{/each}}
             },
-            id: null,
+            errors: {},
             loading: false,
-            mainError: null,
-            validationErrors: [],
             isEditing: false
         }
     },
     methods: {
-        fetchItem() {
-            var self = this
+        async fetchItem() {
             if (!this.id) return
-            this.loading = true
-            {{axiosInstance}}.get(`{{routePath}}/${this.id}`).then((response) => {
+
+            try {
+                const response = await {{axiosCall}}.get(`{{routePath}}/${this.id}`)
                 this.form = response.data.data
                 this.isEditing = true
-                this.loading = false
-            }).catch((error) => {
-                self.loading = false
-                // console.log(error)
-            })
+            } catch (error) {
+                console.error('Error fetching item:', error)
+            }
         },
         async save() {
-            var self = this
-            const payload = { ...this.form }
-            if (this.isEditing) {
-                payload.id = this.id
-            }
+            this.loading = true
+            this.errors = {}
 
-            {{axiosInstance}}.post(`{{routePath}}/save`, payload).then(() => {
-                self.loading = false
-                self.$message({type: 'success', message: self.$t('messages.save_success')})
-                self.$router.push({ name: 'pages.{{routeName}}.index' })
-            }).catch((e) => {
-                self.$message({type: 'error', message: self.$t('messages.save_error')})
-                self.loading = false
-                if (e.response.status === 422) {
-                    self.validationErrors = self.$parseValidationErrors(self.validationErrors, e.response.data.errors)
+            try {
+                const payload = { ...this.form }
+                if (this.isEditing) {
+                    payload.id = this.id
                 }
-            })
-        },
-        cancel() {
-            this.$router.push({ name: 'pages.{{routeName}}.index' })
-        },
+
+                await {{axiosCall}}.post(`{{routePath}}/save`, payload)
+                this.$router.push({ name: 'pages.{{routeName}}.index' })
+            } catch (error) {
+                if (error.response?.data?.errors) {
+                    this.errors = error.response.data.errors
+                }
+                console.error('Error saving:', error)
+            } finally {
+                this.loading = false
+            }
+        }
     },
     mounted() {
         if (this.$route.query.id) {
             this.id = this.$route.query.id
             this.fetchItem()
         }
-    },
-    components: {
-        InputGroup,
-        FormError
     }
 }
 </script>

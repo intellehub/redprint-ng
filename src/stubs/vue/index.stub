@@ -25,8 +25,10 @@
                             <table class="min-w-full divide-y divide-gray">
                                 <thead>
                                 <tr>
+                                    {{#each columns}}
                                     <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 lg:pl-8">
-                                        {{ $t('common.name') }}</th>
+                                        {{ $t('common.{{this.name}}') }}</th>
+                                    {{/each}}
                                     <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6 lg:pr-8">
                                         <span class="sr-only">{{ $t('common.actions') }}</span>
                                     </th>
@@ -34,10 +36,28 @@
                                 </thead>
                                 <tbody class="divide-y divide-gray bg-white">
                                     <tr v-for="item in items" :key="item.id">
-                                        <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">{{ item.name }}</td>
+                                        {{#each columns}}
+                                        {{#if this.type === 'boolean'}}
+                                        <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">
+                                            <el-tag :type="item.{{this.name}} ? 'success' : 'danger'">
+                                                {{ item.{{this.name}} ? $t('common.yes') : $t('common.no') }}
+                                            </el-tag>
+                                        </td>
+                                        {{else if this.type === 'date' || this.type === 'dateTime'}}
+                                        <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">
+                                            {{ item.{{this.name}} ? new Date(item.{{this.name}}).toLocaleDateString() : '' }}
+                                        </td>
+                                        {{else}}
+                                        <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">
+                                            {{ item.{{this.name}} }}
+                                        </td>
+                                        {{/if}}
+                                        {{/each}}
                                         <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">
                                             <div class="float-right">
-                                                <el-button size="small" type="primary" plain @click="gotoEdit(item)">{{ $t('common.edit') }}</el-button>
+                                                <el-button size="small" type="primary" plain @click="gotoEdit(item)">
+                                                    {{ $t('common.edit') }}
+                                                </el-button>
                                                 <el-popconfirm
                                                     :confirm-button-text="$t('common.delete')"
                                                     icon-color="#626AEF"
@@ -46,7 +66,9 @@
                                                     confirm-button-type="danger"
                                                 >
                                                     <template #reference>
-                                                        <el-button size="small" class="float-right mr-2" plain type="danger">{{ $t('common.delete') }}</el-button>
+                                                        <el-button size="small" class="float-right mr-2" plain type="danger">
+                                                            {{ $t('common.delete') }}
+                                                        </el-button>
                                                     </template>
                                                 </el-popconfirm>
                                             </div>
