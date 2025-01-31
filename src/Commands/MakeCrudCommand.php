@@ -230,13 +230,14 @@ class MakeCrudCommand extends Command
 
         $stub = file_get_contents(__DIR__ . '/../stubs/laravel/resource.stub');
         
+        $columnDefinitions = $this->generateResourceColumns();
         $softDeletesResource = $this->option('soft-deletes') === 'true' 
             ? "'deleted_at' => \$this->deleted_at," 
             : '';
 
         $stub = str_replace(
-            ['{{modelName}}', '{{softDeletesResource}}'],
-            [$model, $softDeletesResource],
+            ['{{modelName}}', '{{columns}}', '{{softDeletesResource}}'],
+            [$model, $columnDefinitions, $softDeletesResource],
             $stub
         );
 
@@ -246,6 +247,15 @@ class MakeCrudCommand extends Command
 
         file_put_contents($filePath, $stub);
         $this->info("Resource {$model}Resource created successfully.");
+    }
+
+    private function generateResourceColumns()
+    {
+        $definitions = [];
+        foreach ($this->columns as $column) {
+            $definitions[] = "            '{$column['name']}' => \$this->{$column['name']},";
+        }
+        return implode("\n", $definitions);
     }
 
     private function promptForColumns()
@@ -398,24 +408,29 @@ class MakeCrudCommand extends Command
             }
         }
 
-        // Generate components with existence checks
-        $components = [
-            ['path' => "{$pagesPath}/{$model}.vue", 'stub' => 'page.stub', 'name' => 'Page'],
-            ['path' => "{$componentsPath}/Index.vue", 'stub' => 'index.stub', 'name' => 'Index'],
-            ['path' => "{$componentsPath}/Form.vue", 'stub' => 'form.stub', 'name' => 'Form']
-        ];
-
         $axiosInstance = $this->getAxiosInstance();
+        
+        // Convert columns to a format that can be used in the templates
+        $formFields = $this->generateFormFields($columns);
+        $tableColumns = $this->generateTableColumns($columns);
         
         $replacements = [
             '{{modelName}}' => $model,
             '{{routeName}}' => $routeName,
             '{{routePrefix}}' => $routePrefix,
             '{{routePath}}' => $routeName,
-            '{{columns}}' => json_encode($columns)
+            '{{formFields}}' => $formFields,
+            '{{tableColumns}}' => $tableColumns,
+            '{{formData}}' => $this->generateFormData($columns),
         ];
 
-        // Process stubs with columns data
+        // Process each component
+        $components = [
+            ['path' => "{$pagesPath}/{$model}.vue", 'stub' => 'page.stub', 'name' => 'Page'],
+            ['path' => "{$componentsPath}/Index.vue", 'stub' => 'index.stub', 'name' => 'Index'],
+            ['path' => "{$componentsPath}/Form.vue", 'stub' => 'form.stub', 'name' => 'Form']
+        ];
+
         foreach ($components as $component) {
             if (file_exists($component['path'])) {
                 $this->warn("{$model} {$component['name']} component already exists. Skipping...");
@@ -430,6 +445,54 @@ class MakeCrudCommand extends Command
         }
 
         $this->generateVueRoutes($model);
+    }
+
+    private function generateFormFields($columns)
+    {
+        $fields = [];
+        foreach ($columns as $column) {
+            $field = '';
+            switch ($column['type']) {
+                case 'boolean':
+                    $field = $this->generateBooleanField($column);
+                    break;
+                case 'enum':
+                    $field = $this->generateEnumField($column);
+                    break;
+                case 'text':
+                    $field = $this->generateTextField($column);
+                    break;
+                case 'date':
+                    $field = $this->generateDateField($column);
+                    break;
+                case 'dateTime':
+                    $field = $this->generateDateTimeField($column);
+                    break;
+                default:
+                    $field = $this->generateDefaultField($column);
+            }
+            $fields[] = $field;
+        }
+        return implode("\n", $fields);
+    }
+
+    private function generateTableColumns($columns)
+    {
+        $cols = [];
+        foreach ($columns as $column) {
+            $cols[] = $this->generateTableColumn($column);
+        }
+        return implode("\n", $cols);
+    }
+
+    private function generateFormData($columns)
+    {
+        $data = [];
+        foreach ($columns as $column) {
+            $defaultValue = $column['default'] ?? 'null';
+            $data[] = "                {$column['name']}: {$defaultValue},";
+        }
+        return implode("\n", $data);
     }
 
     private function processStub($stub, $replacements, $axiosInstance)
