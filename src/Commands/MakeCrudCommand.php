@@ -38,6 +38,7 @@ class MakeCrudCommand extends Command
     ];
 
     private $columns = [];
+    private $basePath;
     private $isInteractive = true;
 
     protected function configure()
@@ -65,6 +66,22 @@ class MakeCrudCommand extends Command
             $softDeletes = $input->getOption('soft-deletes');
             $layout = $input->getOption('layout');
             $axiosInstance = config('redprint.axios_instance', 'axios');
+
+            // Use provided base path or fall back to Laravel's base_path()
+            $this->basePath = $this->basePath ?? base_path();
+
+            // Create necessary directories
+            $this->createDirectories($this->basePath);
+
+            // Create route files
+            $this->createRouteFiles();
+
+            // Example of reading from api.php
+            $apiFilePath = $this->basePath . '/routes/api.php';
+            if (File::exists($apiFilePath)) {
+                $apiContent = File::get($apiFilePath);
+                // Process the content if needed
+            }
 
             // Skip prompting if columns are already set
             if (empty($this->columns) && $this->isInteractive) {
@@ -154,7 +171,7 @@ class MakeCrudCommand extends Command
 
     private function generateModel($model, $softDeletes)
     {
-        $filePath = app_path("Models/{$model}.php");
+        $filePath = $this->basePath . '/app/Models/' . $model . '.php';
         if (file_exists($filePath)) {
             $this->warn("Model {$model} already exists. Skipping...");
             return;
@@ -178,7 +195,7 @@ class MakeCrudCommand extends Command
 
     private function generateController($model, $namespace)
     {
-        $path = app_path("Http/Controllers/" . ($namespace ? "{$namespace}/" : ""));
+        $path = $this->basePath . '/app/Http/Controllers/' . ($namespace ? "{$namespace}/" : "");
         $filePath = "{$path}{$model}Controller.php";
 
         if (file_exists($filePath)) {
@@ -232,7 +249,7 @@ class MakeCrudCommand extends Command
 
     private function generateResource($model)
     {
-        $path = app_path("Http/Resources/");
+        $path = $this->basePath . '/app/Http/Resources/';
         $filePath = "{$path}{$model}Resource.php";
 
         if (file_exists($filePath)) {
@@ -429,6 +446,9 @@ class MakeCrudCommand extends Command
         // Create the Vue components
         $this->info("Creating Vue components for {$model}...");
 
+        // Use the base path for file generation
+        $basePath = $this->basePath ?? base_path();
+
         // Generate page component
         $pageStub = $this->getStub('vue/page.stub');
         $pageComponent = str_replace(
@@ -437,7 +457,7 @@ class MakeCrudCommand extends Command
             $pageStub
         );
         
-        $pagePath = resource_path("js/pages/{$model}.vue");
+        $pagePath = $basePath . "/resources/js/pages/{$model}.vue";
         File::put($pagePath, $pageComponent);
         $this->info("{$model} page component created successfully.");
 
@@ -445,7 +465,7 @@ class MakeCrudCommand extends Command
         $indexStub = $this->getStub('vue/index.stub');
         $indexComponent = str_replace('{{modelName}}', $model, $indexStub);
         
-        $indexPath = resource_path("js/components/{$model}/Index.vue");
+        $indexPath = $basePath . "/resources/js/components/{$model}/Index.vue";
         File::put($indexPath, $indexComponent);
         $this->info("{$model} index component created successfully.");
 
@@ -457,16 +477,15 @@ class MakeCrudCommand extends Command
             $formStub
         );
         
-        $formPath = resource_path("js/components/{$model}/Form.vue");
+        $formPath = $basePath . "/resources/js/components/{$model}/Form.vue";
         File::put($formPath, $formComponent);
         $this->info("{$model} form component created successfully.");
     }
 
     private function getStub($name)
     {
-        // Fix the path to stubs
         $stubPath = __DIR__ . '/../stubs/' . $name;
-        
+
         if (!File::exists($stubPath)) {
             throw new \RuntimeException("Stub file not found: {$stubPath}");
         }
@@ -476,7 +495,7 @@ class MakeCrudCommand extends Command
 
     private function updateRoutes($model, $namespace, $routePrefix)
     {
-        $routesFile = base_path('routes/api.php');
+        $routesFile = $this->basePath . '/routes/api.php';
         $content = file_get_contents($routesFile);
 
         $routeName = Str::plural(Str::snake($model));
@@ -524,6 +543,11 @@ Route::prefix('" . ($routePrefix ? $routePrefix : '') . "')->middleware(['auth:a
     {
         $this->columns = $columns;
         $this->isInteractive = false;
+    }
+
+    public function setBasePath(string $path): void
+    {
+        $this->basePath = $path;
     }
 
     private function generateStringField($field)
@@ -700,5 +724,52 @@ Route::prefix('" . ($routePrefix ? $routePrefix : '') . "')->middleware(['auth:a
             default:
                 return 'null';
         }
+    }
+
+    private function createDirectories($basePath)
+    {
+        $directories = [
+            $basePath . '/app/Models',
+            $basePath . '/app/Http/Controllers/Blog',
+            $basePath . '/app/Http/Resources',
+            $basePath . '/resources/js/pages',
+            $basePath . '/resources/js/components',
+            $basePath . '/resources/js/components/Post',
+            $basePath . '/resources/js/router',
+            $basePath . '/database/migrations',
+            $basePath . '/routes',
+        ];
+
+        foreach ($directories as $dir) {
+            if (!File::exists($dir)) {
+                File::makeDirectory($dir, 0777, true);
+            }
+        }
+    }
+
+    protected function createRouteFiles()
+    {
+        // Use the base path for route files
+        $routesPath = $this->basePath . '/routes';
+        
+        // Debug output to check the base path
+        $this->info("Using routes path: {$routesPath}");
+
+        if (!File::exists($routesPath)) {
+            File::makeDirectory($routesPath, 0777, true);
+        }
+
+        // Create api.php if it doesn't exist
+        if (!File::exists($routesPath . '/api.php')) {
+            File::put($routesPath . '/api.php', $this->getApiRouteStub());
+            $this->info("Created api.php at: {$routesPath}/api.php");
+        } else {
+            $this->info("api.php already exists at: {$routesPath}/api.php");
+        }
+    }
+
+    protected function getApiRouteStub()
+    {
+        return $this->getStub('api.stub');
     }
 }
