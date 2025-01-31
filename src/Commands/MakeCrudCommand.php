@@ -4,6 +4,9 @@ namespace Shahnewaz\RedprintNg\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class MakeCrudCommand extends Command
 {
@@ -12,7 +15,8 @@ class MakeCrudCommand extends Command
         {--namespace= : The namespace for the controller}
         {--route-prefix= : The route prefix}
         {--soft-deletes=false : Whether to include soft deletes}
-        {--layout= : The layout component to wrap the page with}';
+        {--layout= : The layout component to wrap the page with}
+        {--columns= : JSON string of columns configuration}';
 
     protected $description = 'Create a new CRUD module';
 
@@ -32,7 +36,20 @@ class MakeCrudCommand extends Command
         'enum'
     ];
 
-    public function handle()
+    private $columns = [];
+    private $isInteractive = true;
+
+    protected function configure()
+    {
+        $this->addOption(
+            'columns',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'JSON string of columns configuration'
+        );
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         try {
             $this->checkDependencies();
@@ -66,7 +83,7 @@ class MakeCrudCommand extends Command
             $this->generateResource($model);
             
             // Generate Migration
-            $columns = $this->promptForColumns();
+            $columns = $this->columns;
             $this->generateMigration($model, $softDeletes, $columns);
             
             // Generate Vue Components
@@ -76,6 +93,20 @@ class MakeCrudCommand extends Command
             $this->updateRoutes($model, $namespace, $routePrefix);
 
             $this->info('CRUD generated successfully!');
+
+            // Only prompt for columns if we're in interactive mode
+            if ($this->isInteractive) {
+                $this->columns = $this->promptForColumns();
+            }
+
+            // Validate that we have columns
+            if (empty($this->columns)) {
+                $output->writeln('<error>No columns defined!</error>');
+                return 1;
+            }
+
+            // Return success code
+            return 0; // 0 for success, 1 for failure
         } catch (\Exception $e) {
             $this->error($e->getMessage());
             return 1;
@@ -260,6 +291,11 @@ class MakeCrudCommand extends Command
 
     private function promptForColumns()
     {
+        // Skip if not in interactive mode
+        if (!$this->isInteractive) {
+            return $this->columns;
+        }
+
         $columnCount = (int) $this->ask('How many columns do you want to add?');
         $columns = [];
 
@@ -512,7 +548,8 @@ class MakeCrudCommand extends Command
                     '{{axiosCall}}'
                 ],
                 [
-                    "import axios from 'axios'\n\nconst api = axios.create({\n    baseURL: `${window.location.protocol}//${window.location.host}/api/{{routePrefix}}/`\n})",
+                    "import axios from 'axios'\n\nconst api = axios.create({\n    baseURL: window.location.protocol + '//' + window.location.host + '/api/{{routePrefix}}/'
+})",
                     'api'
                 ],
                 $stub
@@ -642,5 +679,11 @@ Route::prefix('" . ($routePrefix ? $routePrefix : '') . "')->middleware(['auth:a
     private function getAxiosInstance()
     {
         return config('redprint.axios_instance') ?? 'axios';
+    }
+
+    public function setColumns(array $columns): void
+    {
+        $this->columns = $columns;
+        $this->isInteractive = false;
     }
 }
