@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Illuminate\Support\Facades\File;
 
 class MakeCrudCommand extends Command
 {
@@ -52,63 +53,43 @@ class MakeCrudCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         try {
-            $this->checkDependencies();
-
-            $model = $this->option('model');
-            $namespace = $this->option('namespace');
-            $routePrefix = $this->option('route-prefix');
-            $softDeletes = $this->option('soft-deletes') === 'true';
-            $layout = $this->option('layout');
-
-            if (empty($model)) {
-                $this->error('Model name is required!');
+            // Get command options
+            $model = $input->getOption('model');
+            if (!$model) {
+                $output->writeln('<error>Model name is required!</error>');
                 return 1;
             }
 
-            // Validate layout if provided
-            if ($layout) {
-                $this->validateLayout($layout);
-            }
+            $namespace = $input->getOption('namespace');
+            $routePrefix = $input->getOption('route-prefix');
+            $softDeletes = $input->getOption('soft-deletes');
+            $layout = $input->getOption('layout');
+            $axiosInstance = config('redprint.axios_instance', 'axios');
 
-            // Copy common components first
-            $this->copyCommonComponents();
-
-            // Generate Model
-            $this->generateModel($model, $softDeletes);
-            
-            // Generate Controller
-            $this->generateController($model, $namespace);
-            
-            // Generate Resource
-            $this->generateResource($model);
-            
-            // Generate Migration
-            $columns = $this->columns;
-            $this->generateMigration($model, $softDeletes, $columns);
-            
-            // Generate Vue Components
-            $this->generateVueComponents($model, $layout, $columns);
-            
-            // Update Routes
-            $this->updateRoutes($model, $namespace, $routePrefix);
-
-            $this->info('CRUD generated successfully!');
-
-            // Only prompt for columns if we're in interactive mode
-            if ($this->isInteractive) {
+            // Skip prompting if columns are already set
+            if (empty($this->columns) && $this->isInteractive) {
                 $this->columns = $this->promptForColumns();
             }
 
-            // Validate that we have columns
+            // Validate columns
             if (empty($this->columns)) {
                 $output->writeln('<error>No columns defined!</error>');
                 return 1;
             }
 
-            // Return success code
-            return 0; // 0 for success, 1 for failure
+            // Generate files
+            $this->generateMigration($model, $this->columns, $softDeletes);
+            $this->generateModel($model, $namespace, $softDeletes);
+            $this->generateController($model, $namespace);
+            $this->generateResource($model);
+            $this->generateVueComponents($model, $layout, $this->columns);
+            $this->updateRoutes($model, $namespace, $routePrefix);
+
+            $output->writeln('<info>CRUD generated successfully!</info>');
+            return 0;
+
         } catch (\Exception $e) {
-            $this->error($e->getMessage());
+            $output->writeln('<error>' . $e->getMessage() . '</error>');
             return 1;
         }
     }
@@ -333,7 +314,7 @@ class MakeCrudCommand extends Command
         return $columns;
     }
 
-    private function generateMigration($model, $softDeletes, $columns)
+    private function generateMigration($model, $columns, $softDeletes)
     {
         $stub = file_get_contents(__DIR__ . '/../stubs/laravel/migration.stub');
         
@@ -428,211 +409,69 @@ class MakeCrudCommand extends Command
 
     private function generateVueComponents($model, $layout, $columns)
     {
-        $routeName = Str::plural(Str::snake($model));
-        $routePrefix = $this->option('route-prefix') ? $this->option('route-prefix') . '/' : '';
-        
-        // Generate page component with or without layout
-        $this->generatePageComponent($model, $layout);
-
-        $pagesPath = resource_path('js/pages');
-        $componentsPath = resource_path("js/components/{$model}");
-        
-        // Create directories
-        foreach ([$pagesPath, $componentsPath] as $path) {
-            if (!file_exists($path)) {
-                mkdir($path, 0777, true);
-            }
-        }
-
-        $axiosInstance = $this->getAxiosInstance();
-        
-        // Convert columns to a format that can be used in the templates
-        $formFields = $this->generateFormFields($columns);
-        $tableColumns = $this->generateTableColumns($columns);
-        
-        $replacements = [
-            '{{modelName}}' => $model,
-            '{{routeName}}' => $routeName,
-            '{{routePrefix}}' => $routePrefix,
-            '{{routePath}}' => $routeName,
-            '{{formFields}}' => $formFields,
-            '{{tableColumns}}' => $tableColumns,
-            '{{formData}}' => $this->generateFormData($columns),
-        ];
-
-        // Process each component
-        $components = [
-            ['path' => "{$pagesPath}/{$model}.vue", 'stub' => 'page.stub', 'name' => 'Page'],
-            ['path' => "{$componentsPath}/Index.vue", 'stub' => 'index.stub', 'name' => 'Index'],
-            ['path' => "{$componentsPath}/Form.vue", 'stub' => 'form.stub', 'name' => 'Form']
-        ];
-
-        foreach ($components as $component) {
-            if (file_exists($component['path'])) {
-                $this->warn("{$model} {$component['name']} component already exists. Skipping...");
-                continue;
-            }
-
-            $stub = file_get_contents(__DIR__ . "/../stubs/vue/{$component['stub']}");
-            $stub = $this->processStub($stub, $replacements, $axiosInstance);
+        // Generate form fields configuration
+        $formFields = [];
+        foreach ($columns as $column) {
+            $type = $column['type'];
+            $method = 'generate' . ucfirst($type) . 'Field';
             
-            file_put_contents($component['path'], $stub);
-            $this->info("{$model} {$component['name']} component created successfully.");
-        }
-
-        $this->generateVueRoutes($model);
-    }
-
-    private function generateFormFields($columns)
-    {
-        $fields = [];
-        foreach ($columns as $column) {
-            $field = '';
-            switch ($column['type']) {
-                case 'boolean':
-                    $field = $this->generateBooleanField($column);
-                    break;
-                case 'enum':
-                    $field = $this->generateEnumField($column);
-                    break;
-                case 'text':
-                    $field = $this->generateTextField($column);
-                    break;
-                case 'date':
-                    $field = $this->generateDateField($column);
-                    break;
-                case 'dateTime':
-                    $field = $this->generateDateTimeField($column);
-                    break;
-                default:
-                    $field = $this->generateDefaultField($column);
+            if (method_exists($this, $method)) {
+                $formFields[] = $this->$method($column);
+            } else {
+                // Fallback to string field if no specific generator exists
+                $formFields[] = $this->generateStringField($column);
             }
-            $fields[] = $field;
         }
-        return implode("\n", $fields);
-    }
 
-    private function generateTableColumns($columns)
-    {
-        $cols = [];
-        foreach ($columns as $column) {
-            $cols[] = $this->generateTableColumn($column);
-        }
-        return implode("\n", $cols);
-    }
+        // Convert form fields to JSON for template
+        $formFieldsJson = json_encode($formFields, JSON_PRETTY_PRINT);
 
-    private function generateFormData($columns)
-    {
-        $data = [];
-        foreach ($columns as $column) {
-            $defaultValue = $column['default'] ?? 'null';
-            $data[] = "                {$column['name']}: {$defaultValue},";
-        }
-        return implode("\n", $data);
-    }
+        // Create the Vue components
+        $this->info("Creating Vue components for {$model}...");
 
-    private function processStub($stub, $replacements, $axiosInstance)
-    {
-        // Replace all standard placeholders
-        $stub = str_replace(
-            array_keys($replacements),
-            array_values($replacements),
-            $stub
+        // Generate page component
+        $pageStub = $this->getStub('vue/page.stub');
+        $pageComponent = str_replace(
+            ['{{modelName}}', '{{formFields}}'],
+            [$model, $formFieldsJson],
+            $pageStub
         );
+        
+        $pagePath = resource_path("js/pages/{$model}.vue");
+        File::put($pagePath, $pageComponent);
+        $this->info("{$model} page component created successfully.");
 
-        // Handle axios instance conditionals
-        if ($axiosInstance === 'axios') {
-            $stub = str_replace(
-                [
-                    '{{axiosImport}}',
-                    '{{axiosCall}}'
-                ],
-                [
-                    "import axios from 'axios'\n\nconst api = axios.create({\n    baseURL: window.location.protocol + '//' + window.location.host + '/api/{{routePrefix}}/'
-})",
-                    'api'
-                ],
-                $stub
-            );
-        } else {
-            $stub = str_replace(
-                [
-                    '{{axiosImport}}',
-                    '{{axiosCall}}'
-                ],
-                [
-                    '',
-                    $axiosInstance
-                ],
-                $stub
-            );
-        }
+        // Generate index component
+        $indexStub = $this->getStub('vue/index.stub');
+        $indexComponent = str_replace('{{modelName}}', $model, $indexStub);
+        
+        $indexPath = resource_path("js/components/{$model}/Index.vue");
+        File::put($indexPath, $indexComponent);
+        $this->info("{$model} index component created successfully.");
 
-        return $stub;
+        // Generate form component
+        $formStub = $this->getStub('vue/form.stub');
+        $formComponent = str_replace(
+            ['{{modelName}}', '{{formFields}}'],
+            [$model, $formFieldsJson],
+            $formStub
+        );
+        
+        $formPath = resource_path("js/components/{$model}/Form.vue");
+        File::put($formPath, $formComponent);
+        $this->info("{$model} form component created successfully.");
     }
 
-    private function generateVueRoutes($model)
+    private function getStub($name)
     {
-        $routerFile = resource_path(config('redprint.vue_router_location'));
+        // Fix the path to stubs
+        $stubPath = __DIR__ . '/../stubs/' . $name;
         
-        if (!file_exists($routerFile)) {
-            throw new \Exception("Vue router file not found at: " . config('redprint.vue_router_location'));
+        if (!File::exists($stubPath)) {
+            throw new \RuntimeException("Stub file not found: {$stubPath}");
         }
 
-        $content = file_get_contents($routerFile);
-        $routeName = Str::plural(Str::snake($model));
-
-        $imports = "import {$model}Page from \"@/pages/{$model}.vue\";
-import {$model}Index from \"@/components/{$model}/Index.vue\";
-import {$model}Form from \"@/components/{$model}/Form.vue\";
-";
-
-        // Find the last import statement
-        $lastImportPos = strrpos($content, "import");
-        if ($lastImportPos === false) {
-            $lastImportPos = 0;
-        } else {
-            // Find the end of the last import line
-            $lastImportPos = strpos($content, "\n", $lastImportPos) + 1;
-        }
-
-        // Add new imports after the last import
-        $content = substr_replace($content, $imports, $lastImportPos, 0);
-
-        $routes = "    {
-            path: '/{$routeName}',
-            name: 'pages.{$routeName}',
-            component: {$model}Page,
-            children: [
-                {
-                    path: '',
-                    name: 'pages.{$routeName}.index',
-                    component: {$model}Index,
-                    meta: {title: 'routes.titles.{$routeName}', description: 'routes.descriptions.{$routeName}', requiresAuth: true},
-                },
-                {
-                    path: 'edit',
-                    name: 'pages.{$routeName}.edit',
-                    component: {$model}Form,
-                    meta: {title: 'routes.titles.edit_{$model}', description: 'routes.descriptions.edit_{$model}', requiresAuth: true},
-                },
-                {
-                    path: 'new',
-                    name: 'pages.{$routeName}.new',
-                    component: {$model}Form,
-                    meta: {title: 'routes.titles.new_{$model}', description: 'routes.descriptions.new_{$model}', requiresAuth: true},
-                },
-            ],
-        },\n";
-
-        // Find the last route entry
-        $lastBracketPos = strrpos($content, "]");
-        if ($lastBracketPos !== false) {
-            $content = substr_replace($content, $routes, $lastBracketPos - 1, 0);
-        }
-
-        file_put_contents($routerFile, $content);
-        $this->info("Vue routes for {$model} added successfully.");
+        return File::get($stubPath);
     }
 
     private function updateRoutes($model, $namespace, $routePrefix)
@@ -685,5 +524,181 @@ Route::prefix('" . ($routePrefix ? $routePrefix : '') . "')->middleware(['auth:a
     {
         $this->columns = $columns;
         $this->isInteractive = false;
+    }
+
+    private function generateStringField($field)
+    {
+        $name = $field['name'];
+        $nullable = $field['nullable'];
+        $default = $field['default'];
+
+        return [
+            'name' => $name,
+            'label' => ucfirst($name),
+            'type' => 'text',
+            'rules' => $nullable ? [] : ['required'],
+            'default' => $default ?? '',
+            'placeholder' => "Enter {$name}",
+            'class' => 'form-control'
+        ];
+    }
+
+    private function generateTextField($field)
+    {
+        $name = $field['name'];
+        $nullable = $field['nullable'];
+        $default = $field['default'];
+
+        return [
+            'name' => $name,
+            'label' => ucfirst($name),
+            'type' => 'textarea',
+            'rules' => $nullable ? [] : ['required'],
+            'default' => $default ?? '',
+            'placeholder' => "Enter {$name}",
+            'class' => 'form-control'
+        ];
+    }
+
+    private function generateBooleanField($field)
+    {
+        $name = $field['name'];
+        $nullable = $field['nullable'];
+        $default = $field['default'];
+
+        return [
+            'name' => $name,
+            'label' => ucfirst($name),
+            'type' => 'switch',
+            'rules' => $nullable ? [] : ['required'],
+            'default' => $default ?? false,
+            'class' => 'form-control'
+        ];
+    }
+
+    private function generateNumberField($field)
+    {
+        $name = $field['name'];
+        $nullable = $field['nullable'];
+        $default = $field['default'];
+
+        return [
+            'name' => $name,
+            'label' => ucfirst($name),
+            'type' => 'number',
+            'rules' => $nullable ? [] : ['required', 'numeric'],
+            'default' => $default ?? 0,
+            'placeholder' => "Enter {$name}",
+            'class' => 'form-control'
+        ];
+    }
+
+    private function generateDateField($field)
+    {
+        $name = $field['name'];
+        $nullable = $field['nullable'];
+        $default = $field['default'];
+
+        return [
+            'name' => $name,
+            'label' => ucfirst($name),
+            'type' => 'date',
+            'rules' => $nullable ? [] : ['required', 'date'],
+            'default' => $default ?? null,
+            'class' => 'form-control'
+        ];
+    }
+
+    private function generateDateTimeField($field)
+    {
+        $name = $field['name'];
+        $nullable = $field['nullable'];
+        $default = $field['default'];
+
+        return [
+            'name' => $name,
+            'label' => ucfirst($name),
+            'type' => 'datetime-local',
+            'rules' => $nullable ? [] : ['required', 'date'],
+            'default' => $default ?? null,
+            'class' => 'form-control'
+        ];
+    }
+
+    private function generateTimeField($field)
+    {
+        $name = $field['name'];
+        $nullable = $field['nullable'];
+        $default = $field['default'];
+
+        return [
+            'name' => $name,
+            'label' => ucfirst($name),
+            'type' => 'time',
+            'rules' => $nullable ? [] : ['required'],
+            'default' => $default ?? null,
+            'class' => 'form-control'
+        ];
+    }
+
+    private function generateJsonField($field)
+    {
+        $name = $field['name'];
+        $nullable = $field['nullable'];
+        $default = $field['default'];
+
+        return [
+            'name' => $name,
+            'label' => ucfirst($name),
+            'type' => 'textarea',
+            'rules' => $nullable ? [] : ['required', 'json'],
+            'default' => $default ?? '{}',
+            'placeholder' => "Enter JSON data",
+            'class' => 'form-control'
+        ];
+    }
+
+    private function generateEnumField($field)
+    {
+        $name = $field['name'];
+        $nullable = $field['nullable'];
+        $default = $field['default'];
+
+        return [
+            'name' => $name,
+            'label' => ucfirst($name),
+            'type' => 'select',
+            'rules' => $nullable ? [] : ['required'],
+            'default' => $default ?? null,
+            'options' => [], // This should be populated with enum values
+            'class' => 'form-control'
+        ];
+    }
+
+    private function generateDefaultField($type)
+    {
+        switch ($type) {
+            case 'string':
+                return "''";
+            case 'integer':
+            case 'bigInteger':
+            case 'float':
+            case 'double':
+            case 'decimal':
+                return '0';
+            case 'boolean':
+                return 'false';
+            case 'date':
+            case 'dateTime':
+            case 'time':
+                return 'null';
+            case 'text':
+            case 'json':
+                return "''";
+            case 'enum':
+                return 'null';
+            default:
+                return 'null';
+        }
     }
 }

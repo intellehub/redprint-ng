@@ -63,7 +63,7 @@ PHP;
     {
         $this->withoutMockingConsoleOutput();
 
-        // Define columns directly to bypass interactive prompts
+        // Define columns
         $columns = [
             [
                 'name' => 'title',
@@ -85,22 +85,22 @@ PHP;
             ],
         ];
 
-        // Add debug line to see where the error occurs
-        $command = $this->app->make('Shahnewaz\RedprintNg\Commands\MakeCrudCommand');
-        try {
-            $command->setColumns($columns);
-            
-            $exitCode = Artisan::call('redprint:crud', [
-                '--model' => 'Post',
-                '--namespace' => 'Blog',
-                '--route-prefix' => 'blog',
-                '--soft-deletes' => 'true',
-            ], null, $command);
-        } catch (\Exception $e) {
-            fwrite(STDERR, "\nError at line " . $e->getLine() . " in " . $e->getFile() . "\n");
-            fwrite(STDERR, $e->getMessage() . "\n");
-            throw $e;
-        }
+        // Get a fresh instance of the command
+        $command = new \Shahnewaz\RedprintNg\Commands\MakeCrudCommand();
+        
+        // Set columns and disable interactive mode
+        $command->setColumns($columns);
+
+        // Register the command instance
+        $this->app['Illuminate\Contracts\Console\Kernel']->registerCommand($command);
+
+        // Run the command
+        $exitCode = Artisan::call('redprint:crud', [
+            '--model' => 'Post',
+            '--namespace' => 'Blog',
+            '--route-prefix' => 'blog',
+            '--soft-deletes' => 'true',
+        ]);
 
         // Get the output for debugging
         $output = Artisan::output();
