@@ -13,10 +13,4 @@ class TestCase extends Orchestra
             RedprintServiceProvider::class,
         ];
     }
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        // Additional setup
-    }
 } 
