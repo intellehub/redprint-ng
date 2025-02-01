@@ -6,80 +6,51 @@ use App\Http\Controllers\Controller;
 use App\Models\{{modelName}};
 use App\Http\Resources\{{modelName}}Resource;
 use Illuminate\Http\Request;
-{{#if softDeletes}}
-use Illuminate\Database\Eloquent\SoftDeletes;
-{{/if}}
 
 class {{modelName}}Controller extends Controller
 {
-    {{#if softDeletes}}
-    use SoftDeletes;
-    {{/if}}
-
-    public function index(Request $request)
+    public function getIndex(Request $request)
     {
         $query = {{modelName}}::query();
 
-        if ($request->has('{{modelFirstColumn}}')) {
-            $query->where('{{modelFirstColumn}}', 'like', '%' . $request->get('{{modelFirstColumn}}') . '%');
+        if ($request->has('name')) {
+            $query->where('name', 'like', '%' . $request->get('name') . '%');
         }
 
-        $items = $query->paginate(10);
-        return response()->json($items);
+        return {{modelName}}Resource::collection(
+            $query->paginate($request->get('per_page', 10))
+        );
     }
 
     public function show($id)
     {
-        $item = {{modelName}}::findOrFail($id);
-        return response()->json($item);
+        $model = {{modelName}}::findOrFail($id);
+        return new {{modelName}}Resource($model);
     }
 
-    public function store(Request $request)
+    public function save(Request $request)
     {
-        $validatedData = $request->validate([
-            // Validation rules
+        $request->validate([
+            'name' => 'required|string|max:255',
         ]);
 
-        $item = {{modelName}}::create($validatedData);
-        return response()->json($item, 201);
+        if ($request->has('id')) {
+            $model = {{modelName}}::findOrFail($request->id);
+            $model->update($request->all());
+        } else {
+            $model = {{modelName}}::create($request->all());
+        }
+
+        return new {{modelName}}Resource($model);
     }
 
-    public function update(Request $request, $id)
+    public function delete($id)
     {
-        $item = {{modelName}}::findOrFail($id);
-        $validatedData = $request->validate([
-            // Validation rules
-        ]);
-
-        $item->{{modelFirstColumn}} = $request->get('{{modelFirstColumn}}');
-        $item->save();
-
-        return response()->json($item);
-    }
-
-    public function destroy($id)
-    {
-        $item = {{modelName}}::findOrFail($id);
-        $item->delete();
+        $model = {{modelName}}::findOrFail($id);
+        $model->delete();
 
         return response()->json(['message' => '{{modelName}} deleted successfully']);
     }
 
-    {{#if softDeletes}}
-    public function restore($id)
-    {
-        $item = {{modelName}}::withTrashed()->findOrFail($id);
-        $item->restore();
-
-        return response()->json(['message' => '{{modelName}} restored successfully']);
-    }
-
-    public function forceDelete($id)
-    {
-        $item = {{modelName}}::withTrashed()->findOrFail($id);
-        $item->forceDelete();
-
-        return response()->json(['message' => '{{modelName}} permanently deleted successfully']);
-    }
-    {{/if}}
+    {{softDeleteMethods}}
 }

@@ -13,7 +13,29 @@ class MakeCrudCommandTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->testFilesPath = __DIR__ . '/../../temp_files';
+        
+        // Create temp directory if it doesn't exist
+        $tempPath = __DIR__ . '/../../temp_files';
+        if (!file_exists($tempPath)) {
+            mkdir($tempPath, 0777, true);
+        }
+
+        // Create mock package.json
+        $packageJson = json_encode([
+            "dependencies" => [
+                "vue" => "^3.0.0",
+                "element-plus" => "^2.0.0",
+                "tailwindcss" => "^3.0.0",
+                "axios" => "^1.0.0",
+                "vue-router" => "^4.0.0",
+                "vue-i18n" => "^9.0.0",
+                "lodash" => "^4.17.21"
+            ]
+        ], JSON_PRETTY_PRINT);
+        
+        file_put_contents($tempPath . '/package.json', $packageJson);
+
+        $this->testFilesPath = $tempPath;
     }
 
     public function test_it_can_generate_crud()
@@ -71,10 +93,5 @@ class MakeCrudCommandTest extends TestCase
         $this->assertFileExists($this->testFilesPath . '/resources/js/pages/Post.vue', 'Page component was not created');
         $this->assertFileExists($this->testFilesPath . '/resources/js/components/Post/Index.vue', 'Index component was not created');
         $this->assertFileExists($this->testFilesPath . '/resources/js/components/Post/Form.vue', 'Form component was not created');
-    }
-
-    protected function tearDown(): void
-    {
-        parent::tearDown();
     }
 } 

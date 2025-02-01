@@ -76,7 +76,6 @@ class MakeCrudCommand extends Command
             // Create route files
             $this->createRouteFiles();
 
-            // Example of reading from api.php
             $apiFilePath = $this->basePath . '/routes/api.php';
             if (File::exists($apiFilePath)) {
                 $apiContent = File::get($apiFilePath);
@@ -95,12 +94,14 @@ class MakeCrudCommand extends Command
             }
 
             // Generate files
+            $this->checkDependencies();
+            $this->copyCommonComponents();
             $this->generateMigration($model, $this->columns, $softDeletes);
-            $this->generateModel($model, $namespace, $softDeletes);
-            $this->generateController($model, $namespace, $softDeletes ? "use Illuminate\Database\Eloquent\SoftDeletes;" : "", $softDeletes);
+            $this->generateModel($model, $namespace);
+            $this->generateController($model, $namespace,);
             $this->generateResource($model);
-            $this->generateVueComponents($model, $layout, $this->columns);
-            $this->updateRoutes($model, $namespace, $routePrefix);
+            $this->createVueComponents();
+            $this->updateLaravelRoutes($model, $namespace, $routePrefix);
 
             $output->writeln('<info>CRUD generated successfully!</info>');
             return 0;
@@ -113,7 +114,7 @@ class MakeCrudCommand extends Command
 
     private function checkDependencies()
     {
-        $packageJson = base_path('package.json');
+        $packageJson = $this->basePath . '/package.json';
         if (!file_exists($packageJson)) {
             throw new \Exception('package.json not found. Make sure you are in a Laravel project with Vue.js setup.');
         }
@@ -148,7 +149,7 @@ class MakeCrudCommand extends Command
 
     private function copyCommonComponents()
     {
-        $commonPath = resource_path('js/components/Common');
+        $commonPath = $this->basePath . '/resources/js/components/Common';
         if (!file_exists($commonPath)) {
             mkdir($commonPath, 0777, true);
         }
@@ -193,31 +194,46 @@ class MakeCrudCommand extends Command
         $this->info("Model {$model} created successfully.");
     }
 
-    private function generateController($model, $namespace, $softDeleteMethods = '', $softDeletesEnabled = false)
+    private function generateController($model, $namespace)
     {
-        // Use the correct path for the controller stub
-        $controllerStub = $this->getStub('laravel/controller.stub');
-        
-        $controllerContent = str_replace(
-            ['{{namespace}}', '{{modelName}}', '{{modelFirstColumn}}', '{{softDeleteMethods}}'],
-            [$namespace, $model, $this->getFirstColumn($model), $softDeleteMethods],
-            $controllerStub
-        );
+        $path = $this->basePath . "/app/Http/Controllers/" . ($namespace ? "{$namespace}/" : "");
+        $filePath = "{$path}{$model}Controller.php";
 
-        // Determine if soft deletes are enabled
-        $softDeletesFlag = $softDeletesEnabled ? 'true' : 'false';
-        $controllerContent = str_replace('{{softDeletes}}', $softDeletesFlag, $controllerContent);
-
-        // Use the correct base path for the controller
-        $controllerPath = $this->basePath . "/app/Http/Controllers/{$namespace}/{$model}Controller.php";
-        
-        // Ensure the directory exists
-        if (!file_exists(dirname($controllerPath))) {
-            mkdir(dirname($controllerPath), 0777, true);
+        if (file_exists($filePath)) {
+            $this->warn("Controller {$model}Controller already exists. Skipping...");
+            return;
         }
 
-        File::put($controllerPath, $controllerContent);
-        $this->info("Controller created successfully: {$controllerPath}");
+        $stub = file_get_contents(__DIR__ . '/../stubs/laravel/controller.stub');
+
+        $controllerNamespace = $namespace
+            ? "App\\Http\\Controllers\\{$namespace}"
+            : "App\\Http\\Controllers";
+
+        $softDeleteMethods = $this->option('soft-deletes') === 'true'
+            ? $this->getSoftDeleteMethods($model)
+            : '';
+
+        $stub = str_replace(
+            [
+                '{{namespace}}',
+                '{{modelName}}',
+                '{{softDeleteMethods}}'
+            ],
+            [
+                $controllerNamespace,
+                $model,
+                $softDeleteMethods
+            ],
+            $stub
+        );
+
+        if (!file_exists($path)) {
+            mkdir($path, 0777, true);
+        }
+
+        file_put_contents($filePath, $stub);
+        $this->info("Controller {$model}Controller created successfully.");
     }
 
     private function getFirstColumn($model)
@@ -383,7 +399,7 @@ class MakeCrudCommand extends Command
 
     private function generatePageComponent($model, $layout = null)
     {
-        $pagesPath = resource_path('js/pages');
+        $pagesPath = $this->basePath . '/resources/js/pages';
         $filePath = "{$pagesPath}/{$model}.vue";
 
         if (file_exists($filePath)) {
@@ -408,105 +424,90 @@ class MakeCrudCommand extends Command
         $this->info("{$model} page component created successfully.");
     }
 
-    private function generateVueComponents($model, $layout, $columns)
+    private function createVueComponents()
     {
-        // Use the base path for file generation
-        $basePath = $this->basePath ?? base_path();
+        $model = $this->option('model');
+        
+        // Ensure directories exist first
+        $this->ensureDirectoriesExist();
 
-        // Generate page component
-        $pageStub = $this->getStub('vue/page.stub');
-        $pageComponent = str_replace(
-            ['{{modelName}}'],
-            [$model],
-            $pageStub
-        );
+        // Debug output
+        $this->info("Creating files in: {$this->basePath}");
+        $this->info("Current working directory: " . getcwd());
 
-        $pagePath = $basePath . "/resources/js/pages/{$model}.vue";
-        File::put($pagePath, $pageComponent);
-        $this->info("{$model} page component created successfully.");
-
-        // Generate index component
-        $indexStub = $this->getStub('vue/index.stub');
-        $indexComponent = $this->generateIndexComponent($model, $columns);
-
-        $indexPath = $basePath . "/resources/js/components/{$model}/Index.vue";
-        File::put($indexPath, $indexComponent);
-        $this->info("{$model} index component created successfully.");
-
-        // Generate form component dynamically
-        $formFields = $this->generateFormFields($columns);
-        $formComponent = $this->getFormComponent($model, $formFields);
-
-        $formPath = $basePath . "/resources/js/components/{$model}/Form.vue";
-        File::put($formPath, $formComponent);
-        $this->info("{$model} form component created successfully.");
-
-        // Generate Vue routes
-        $this->generateVueRoutes($model);
-    }
-
-    private function generateFormFields($columns)
-    {
-        $fields = '';
-        $formInputVariables = '';
-
-        foreach ($columns as $column) {
-            $name = $column['name'];
-            $type = $column['type'];
-
-            // Determine the stub file to use based on the column type
-            $stubFile = __DIR__ . '/../stubs/vue/form/' . strtolower($type) . '.stub';
-
-            if (file_exists($stubFile)) {
-                $fieldTemplate = file_get_contents($stubFile);
-                $fieldTemplate = str_replace('{{name}}', $name, $fieldTemplate);
-                if (isset($column['enumValues'])) {
-                    $fieldTemplate = str_replace('{{enumValues}}', json_encode($column['enumValues']), $fieldTemplate);
-                }
-                $fields .= $fieldTemplate . "\n"; // Append the generated field
+        try {
+            // Create Index component
+            $indexContent = $this->getStub('vue/index.stub');
+            $indexPath = "{$this->basePath}/resources/js/components/{$model}/Index.vue";
+            $this->info("Attempting to create file at: {$indexPath}");
+            
+            if (!is_dir(dirname($indexPath))) {
+                $this->info("Directory doesn't exist, creating: " . dirname($indexPath));
+                mkdir(dirname($indexPath), 0777, true);
+            }
+            
+            if ($this->createFile($indexPath, $indexContent)) {
+                $this->info("{$model} index component created successfully at {$indexPath}");
+            } else {
+                throw new \RuntimeException("Failed to create index component");
             }
 
-            // Generate form input variable line
-            $defaultValue = isset($column['default']) ? $column['default'] : 'null';
-            $formInputVariables .= "{$name}: {$defaultValue},\n";
+            // Create Form component
+            $formContent = $this->getStub('vue/form.stub');
+            $formPath = "{$this->basePath}/resources/js/components/{$model}/Form.vue";
+            if ($this->createFile($formPath, $formContent)) {
+                $this->info("{$model} form component created successfully.");
+            } else {
+                throw new \RuntimeException("Failed to create form component");
+            }
+
+            // Create Page component
+            $pageContent = $this->getStub('vue/page.stub');
+            $pagePath = "{$this->basePath}/resources/js/pages/{$model}.vue";
+            if ($this->createFile($pagePath, $pageContent)) {
+                $this->info("{$model} page component created successfully.");
+            } else {
+                throw new \RuntimeException("Failed to create page component");
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            $this->error("Error creating Vue components: " . $e->getMessage());
+            return false;
         }
-
-        return [
-            'fields' => $fields,
-            'formInputVariables' => rtrim($formInputVariables, ",\n") // Remove trailing comma
-        ];
     }
 
-    private function getAxiosImport()
+    private function createFile($path, $content)
     {
-        return "import axios from 'axios';";
-    }
+        try {
+            // Double-check directory exists
+            $directory = dirname($path);
+            if (!file_exists($directory)) {
+                $this->info("Creating directory: {$directory}");
+                if (!mkdir($directory, 0777, true) && !is_dir($directory)) {
+                    throw new \RuntimeException("Failed to create directory: {$directory}");
+                }
+            }
 
-    private function getFormComponent($model, $formData)
-    {
-        $template = file_get_contents(__DIR__ . '/../stubs/vue/form.stub');
+            // Verify directory exists and is writable
+            if (!is_dir($directory) || !is_writable($directory)) {
+                throw new \RuntimeException("Directory {$directory} does not exist or is not writable");
+            }
 
-        // Replace placeholders in the template
-        $template = str_replace('{{modelName}}', $model, $template);
-        $template = str_replace('{{inputFields}}', $formData['fields'], $template);
-        $template = str_replace('{{formInputVariables}}', $formData['formInputVariables'], $template);
-        $template = str_replace('{{axiosImport}}', $this->getAxiosImport(), $template);
+            // Write file
+            $result = file_put_contents($path, $content);
+            if ($result === false) {
+                throw new \RuntimeException("Failed to write file: {$path}");
+            }
 
-        return $template;
-    }
-
-    private function getStub($name)
-    {
-        $stubPath = __DIR__ . '/../stubs/' . $name;
-
-        if (!File::exists($stubPath)) {
-            throw new \RuntimeException("Stub file not found: {$stubPath}");
+            return true;
+        } catch (\Exception $e) {
+            $this->error($e->getMessage());
+            return false;
         }
-
-        return File::get($stubPath);
     }
 
-    private function updateRoutes($model, $namespace, $routePrefix)
+    private function updateLaravelRoutes($model, $namespace, $routePrefix)
     {
         $routesFile = $this->basePath . '/routes/api.php';
         $content = file_get_contents($routesFile);
@@ -566,7 +567,6 @@ Route::prefix('" . ($routePrefix ? $routePrefix : '') . "')->middleware(['auth:a
             $basePath . '/app/Http/Resources',
             $basePath . '/resources/js/pages',
             $basePath . '/resources/js/components',
-            $basePath . '/resources/js/components/Post',
             $basePath . '/resources/js/router',
             $basePath . '/database/migrations',
             $basePath . '/routes',
@@ -602,7 +602,7 @@ Route::prefix('" . ($routePrefix ? $routePrefix : '') . "')->middleware(['auth:a
 
     protected function getApiRouteStub()
     {
-        return $this->getStub('api.stub');
+        return $this->getStub('laravel/api.stub');
     }
 
     private function generateVueRoutes($model)
@@ -701,5 +701,61 @@ import {$model}Form from \"@/components/{$model}/Form.vue\";
 
         File::put($indexPath, $indexComponent);
         $this->info("{$model} index component created successfully.");
+    }
+
+    private function getSoftDeleteMethods($model)
+    {
+        return "
+    public function deleteFromTrash(\$id)
+    {
+        \$model = {$model}::withTrashed()->findOrFail(\$id);
+        \$model->forceDelete();
+        
+        return response()->json(['message' => '{$model} permanently deleted'], 204);
+    }
+
+    public function restore(\$id)
+    {
+        \$model = {$model}::withTrashed()->findOrFail(\$id);
+        \$model->restore();
+        
+        return response()->json(['message' => '{$model} restored successfully']);
+    }";
+    }
+
+    private function ensureDirectoriesExist()
+    {
+        $model = $this->option('model');
+        $directories = [
+            'routes',
+            'resources/js/components',
+            'resources/js/components/Common',
+            "resources/js/components/{$model}",
+            'resources/js/pages',
+        ];
+
+        foreach ($directories as $directory) {
+            $path = $this->basePath . '/' . $directory;
+            if (!file_exists($path)) {
+                if (!mkdir($path, 0777, true) && !is_dir($path)) {
+                    throw new \RuntimeException(sprintf('Directory "%s" was not created', $path));
+                }
+            }
+        }
+    }
+
+    private function getStub($path)
+    {
+        $stubPath = __DIR__ . "/../stubs/{$path}";
+        
+        // Debug the full path
+        $this->info("Looking for stub at: {$stubPath}");
+        $this->info("__DIR__ is: " . __DIR__);
+        
+        if (!file_exists($stubPath)) {
+            throw new \RuntimeException("Stub file not found at: {$stubPath}");
+        }
+
+        return file_get_contents($stubPath);
     }
 }
