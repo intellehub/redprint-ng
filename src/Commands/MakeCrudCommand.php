@@ -97,7 +97,7 @@ class MakeCrudCommand extends Command
             // Generate files
             $this->generateMigration($model, $this->columns, $softDeletes);
             $this->generateModel($model, $namespace, $softDeletes);
-            $this->generateController($model, $namespace);
+            $this->generateController($model, $namespace, $softDeletes ? "use Illuminate\Database\Eloquent\SoftDeletes;" : "", $softDeletes);
             $this->generateResource($model);
             $this->generateVueComponents($model, $layout, $this->columns);
             $this->updateRoutes($model, $namespace, $routePrefix);
@@ -193,58 +193,40 @@ class MakeCrudCommand extends Command
         $this->info("Model {$model} created successfully.");
     }
 
-    private function generateController($model, $namespace)
+    private function generateController($model, $namespace, $softDeleteMethods = '', $softDeletesEnabled = false)
     {
-        $path = $this->basePath . '/app/Http/Controllers/' . ($namespace ? "{$namespace}/" : "");
-        $filePath = "{$path}{$model}Controller.php";
-
-        if (file_exists($filePath)) {
-            $this->warn("Controller {$model}Controller already exists. Skipping...");
-            return;
-        }
-
-        $stub = file_get_contents(__DIR__ . '/../stubs/laravel/controller.stub');
+        // Use the correct path for the controller stub
+        $controllerStub = $this->getStub('laravel/controller.stub');
         
-        $controllerNamespace = $namespace 
-            ? "App\\Http\\Controllers\\{$namespace}" 
-            : "App\\Http\\Controllers";
-
-        $softDeleteMethods = $this->option('soft-deletes') === 'true' 
-            ? $this->getSoftDeleteMethods($model)
-            : '';
-
-        $stub = str_replace(
-            [
-                '{{namespace}}',
-                '{{modelName}}',
-                '{{softDeleteMethods}}'
-            ],
-            [
-                $controllerNamespace,
-                $model,
-                $softDeleteMethods
-            ],
-            $stub
+        $controllerContent = str_replace(
+            ['{{namespace}}', '{{modelName}}', '{{modelFirstColumn}}', '{{softDeleteMethods}}'],
+            [$namespace, $model, $this->getFirstColumn($model), $softDeleteMethods],
+            $controllerStub
         );
 
-        if (!file_exists($path)) {
-            mkdir($path, 0777, true);
+        // Determine if soft deletes are enabled
+        $softDeletesFlag = $softDeletesEnabled ? 'true' : 'false';
+        $controllerContent = str_replace('{{softDeletes}}', $softDeletesFlag, $controllerContent);
+
+        // Use the correct base path for the controller
+        $controllerPath = $this->basePath . "/app/Http/Controllers/{$namespace}/{$model}Controller.php";
+        
+        // Ensure the directory exists
+        if (!file_exists(dirname($controllerPath))) {
+            mkdir(dirname($controllerPath), 0777, true);
         }
 
-        file_put_contents($filePath, $stub);
-        $this->info("Controller {$model}Controller created successfully.");
+        File::put($controllerPath, $controllerContent);
+        $this->info("Controller created successfully: {$controllerPath}");
     }
 
-    private function getSoftDeleteMethods($model)
+    private function getFirstColumn($model)
     {
-        return "
-        public function deleteFromTrash(\$id)
-        {
-            \$model = {$model}::withTrashed()->findOrFail(\$id);
-            \$model->forceDelete();
-            
-            return response()->json(['message' => '{$model} permanently deleted'], 204);
-        }";
+        $columns = $this->columns;
+        if (!empty($columns)) {
+            return $columns[0]['name'];
+        }
+        throw new \Exception("No columns defined for the model.");
     }
 
     private function generateResource($model)
@@ -334,6 +316,7 @@ class MakeCrudCommand extends Command
     private function generateMigration($model, $columns, $softDeletes)
     {
         $stub = file_get_contents(__DIR__ . '/../stubs/laravel/migration.stub');
+
         
         $tableName = Str::plural(Str::snake($model));
         $columnDefinitions = $this->generateColumnDefinitions($columns);
@@ -354,7 +337,8 @@ class MakeCrudCommand extends Command
         );
 
         $fileName = date('Y_m_d_His') . "_create_{$tableName}_table.php";
-        file_put_contents(database_path("migrations/{$fileName}"), $stub);
+        $filePath = $this->basePath . '/database/migrations/' . $fileName;
+        file_put_contents($filePath, $stub);
     }
 
     private function generateColumnDefinitions($columns)
@@ -426,60 +410,89 @@ class MakeCrudCommand extends Command
 
     private function generateVueComponents($model, $layout, $columns)
     {
-        // Generate form fields configuration
-        $formFields = [];
-        foreach ($columns as $column) {
-            $type = $column['type'];
-            $method = 'generate' . ucfirst($type) . 'Field';
-            
-            if (method_exists($this, $method)) {
-                $formFields[] = $this->$method($column);
-            } else {
-                // Fallback to string field if no specific generator exists
-                $formFields[] = $this->generateStringField($column);
-            }
-        }
-
-        // Convert form fields to JSON for template
-        $formFieldsJson = json_encode($formFields, JSON_PRETTY_PRINT);
-
-        // Create the Vue components
-        $this->info("Creating Vue components for {$model}...");
-
         // Use the base path for file generation
         $basePath = $this->basePath ?? base_path();
 
         // Generate page component
         $pageStub = $this->getStub('vue/page.stub');
         $pageComponent = str_replace(
-            ['{{modelName}}', '{{formFields}}'],
-            [$model, $formFieldsJson],
+            ['{{modelName}}'],
+            [$model],
             $pageStub
         );
-        
+
         $pagePath = $basePath . "/resources/js/pages/{$model}.vue";
         File::put($pagePath, $pageComponent);
         $this->info("{$model} page component created successfully.");
 
         // Generate index component
         $indexStub = $this->getStub('vue/index.stub');
-        $indexComponent = str_replace('{{modelName}}', $model, $indexStub);
-        
+        $indexComponent = $this->generateIndexComponent($model, $columns);
+
         $indexPath = $basePath . "/resources/js/components/{$model}/Index.vue";
         File::put($indexPath, $indexComponent);
         $this->info("{$model} index component created successfully.");
 
-        // Generate form component
-        $formStub = $this->getStub('vue/form.stub');
-        $formComponent = str_replace(
-            ['{{modelName}}', '{{formFields}}'],
-            [$model, $formFieldsJson],
-            $formStub
-        );
-        
+        // Generate form component dynamically
+        $formFields = $this->generateFormFields($columns);
+        $formComponent = $this->getFormComponent($model, $formFields);
+
         $formPath = $basePath . "/resources/js/components/{$model}/Form.vue";
         File::put($formPath, $formComponent);
         $this->info("{$model} form component created successfully.");
+
+        // Generate Vue routes
+        $this->generateVueRoutes($model);
+    }
+
+    private function generateFormFields($columns)
+    {
+        $fields = '';
+        $formInputVariables = '';
+
+        foreach ($columns as $column) {
+            $name = $column['name'];
+            $type = $column['type'];
+
+            // Determine the stub file to use based on the column type
+            $stubFile = __DIR__ . '/../stubs/vue/form/' . strtolower($type) . '.stub';
+
+            if (file_exists($stubFile)) {
+                $fieldTemplate = file_get_contents($stubFile);
+                $fieldTemplate = str_replace('{{name}}', $name, $fieldTemplate);
+                if (isset($column['enumValues'])) {
+                    $fieldTemplate = str_replace('{{enumValues}}', json_encode($column['enumValues']), $fieldTemplate);
+                }
+                $fields .= $fieldTemplate . "\n"; // Append the generated field
+            }
+
+            // Generate form input variable line
+            $defaultValue = isset($column['default']) ? $column['default'] : 'null';
+            $formInputVariables .= "{$name}: {$defaultValue},\n";
+        }
+
+        return [
+            'fields' => $fields,
+            'formInputVariables' => rtrim($formInputVariables, ",\n") // Remove trailing comma
+        ];
+    }
+
+    private function getAxiosImport()
+    {
+        return "import axios from 'axios';";
+    }
+
+    private function getFormComponent($model, $formData)
+    {
+        $template = file_get_contents(__DIR__ . '/../stubs/vue/form.stub');
+
+        // Replace placeholders in the template
+        $template = str_replace('{{modelName}}', $model, $template);
+        $template = str_replace('{{inputFields}}', $formData['fields'], $template);
+        $template = str_replace('{{formInputVariables}}', $formData['formInputVariables'], $template);
+        $template = str_replace('{{axiosImport}}', $this->getAxiosImport(), $template);
+
+        return $template;
     }
 
     private function getStub($name)
@@ -534,11 +547,6 @@ Route::prefix('" . ($routePrefix ? $routePrefix : '') . "')->middleware(['auth:a
         $this->info("API routes for {$model} added successfully.");
     }
 
-    private function getAxiosInstance()
-    {
-        return config('redprint.axios_instance') ?? 'axios';
-    }
-
     public function setColumns(array $columns): void
     {
         $this->columns = $columns;
@@ -548,182 +556,6 @@ Route::prefix('" . ($routePrefix ? $routePrefix : '') . "')->middleware(['auth:a
     public function setBasePath(string $path): void
     {
         $this->basePath = $path;
-    }
-
-    private function generateStringField($field)
-    {
-        $name = $field['name'];
-        $nullable = $field['nullable'];
-        $default = $field['default'];
-
-        return [
-            'name' => $name,
-            'label' => ucfirst($name),
-            'type' => 'text',
-            'rules' => $nullable ? [] : ['required'],
-            'default' => $default ?? '',
-            'placeholder' => "Enter {$name}",
-            'class' => 'form-control'
-        ];
-    }
-
-    private function generateTextField($field)
-    {
-        $name = $field['name'];
-        $nullable = $field['nullable'];
-        $default = $field['default'];
-
-        return [
-            'name' => $name,
-            'label' => ucfirst($name),
-            'type' => 'textarea',
-            'rules' => $nullable ? [] : ['required'],
-            'default' => $default ?? '',
-            'placeholder' => "Enter {$name}",
-            'class' => 'form-control'
-        ];
-    }
-
-    private function generateBooleanField($field)
-    {
-        $name = $field['name'];
-        $nullable = $field['nullable'];
-        $default = $field['default'];
-
-        return [
-            'name' => $name,
-            'label' => ucfirst($name),
-            'type' => 'switch',
-            'rules' => $nullable ? [] : ['required'],
-            'default' => $default ?? false,
-            'class' => 'form-control'
-        ];
-    }
-
-    private function generateNumberField($field)
-    {
-        $name = $field['name'];
-        $nullable = $field['nullable'];
-        $default = $field['default'];
-
-        return [
-            'name' => $name,
-            'label' => ucfirst($name),
-            'type' => 'number',
-            'rules' => $nullable ? [] : ['required', 'numeric'],
-            'default' => $default ?? 0,
-            'placeholder' => "Enter {$name}",
-            'class' => 'form-control'
-        ];
-    }
-
-    private function generateDateField($field)
-    {
-        $name = $field['name'];
-        $nullable = $field['nullable'];
-        $default = $field['default'];
-
-        return [
-            'name' => $name,
-            'label' => ucfirst($name),
-            'type' => 'date',
-            'rules' => $nullable ? [] : ['required', 'date'],
-            'default' => $default ?? null,
-            'class' => 'form-control'
-        ];
-    }
-
-    private function generateDateTimeField($field)
-    {
-        $name = $field['name'];
-        $nullable = $field['nullable'];
-        $default = $field['default'];
-
-        return [
-            'name' => $name,
-            'label' => ucfirst($name),
-            'type' => 'datetime-local',
-            'rules' => $nullable ? [] : ['required', 'date'],
-            'default' => $default ?? null,
-            'class' => 'form-control'
-        ];
-    }
-
-    private function generateTimeField($field)
-    {
-        $name = $field['name'];
-        $nullable = $field['nullable'];
-        $default = $field['default'];
-
-        return [
-            'name' => $name,
-            'label' => ucfirst($name),
-            'type' => 'time',
-            'rules' => $nullable ? [] : ['required'],
-            'default' => $default ?? null,
-            'class' => 'form-control'
-        ];
-    }
-
-    private function generateJsonField($field)
-    {
-        $name = $field['name'];
-        $nullable = $field['nullable'];
-        $default = $field['default'];
-
-        return [
-            'name' => $name,
-            'label' => ucfirst($name),
-            'type' => 'textarea',
-            'rules' => $nullable ? [] : ['required', 'json'],
-            'default' => $default ?? '{}',
-            'placeholder' => "Enter JSON data",
-            'class' => 'form-control'
-        ];
-    }
-
-    private function generateEnumField($field)
-    {
-        $name = $field['name'];
-        $nullable = $field['nullable'];
-        $default = $field['default'];
-
-        return [
-            'name' => $name,
-            'label' => ucfirst($name),
-            'type' => 'select',
-            'rules' => $nullable ? [] : ['required'],
-            'default' => $default ?? null,
-            'options' => [], // This should be populated with enum values
-            'class' => 'form-control'
-        ];
-    }
-
-    private function generateDefaultField($type)
-    {
-        switch ($type) {
-            case 'string':
-                return "''";
-            case 'integer':
-            case 'bigInteger':
-            case 'float':
-            case 'double':
-            case 'decimal':
-                return '0';
-            case 'boolean':
-                return 'false';
-            case 'date':
-            case 'dateTime':
-            case 'time':
-                return 'null';
-            case 'text':
-            case 'json':
-                return "''";
-            case 'enum':
-                return 'null';
-            default:
-                return 'null';
-        }
     }
 
     private function createDirectories($basePath)
@@ -771,5 +603,103 @@ Route::prefix('" . ($routePrefix ? $routePrefix : '') . "')->middleware(['auth:a
     protected function getApiRouteStub()
     {
         return $this->getStub('api.stub');
+    }
+
+    private function generateVueRoutes($model)
+    {
+        $routerFile = resource_path(config('redprint.vue_router_location'));
+
+        if (!file_exists($routerFile)) {
+            throw new \Exception("Vue router file not found at: " . config('redprint.vue_router_location'));
+        }
+
+        $content = file_get_contents($routerFile);
+        $routeName = Str::plural(Str::snake($model));
+
+        $imports = "import {$model}Page from \"@/pages/{$model}.vue\";
+import {$model}Index from \"@/components/{$model}/Index.vue\";
+import {$model}Form from \"@/components/{$model}/Form.vue\";
+";
+
+        // Find the last import statement
+        $lastImportPos = strrpos($content, "import");
+        if ($lastImportPos === false) {
+            $lastImportPos = 0;
+        } else {
+            // Find the end of the last import line
+            $lastImportPos = strpos($content, "\n", $lastImportPos) + 1;
+        }
+
+        // Add new imports after the last import
+        $content = substr_replace($content, $imports, $lastImportPos, 0);
+
+        $routes = "    {
+            path: '/{$routeName}',
+            name: 'pages.{$routeName}',
+            component: {$model}Page,
+            children: [
+                {
+                    path: '',
+                    name: 'pages.{$routeName}.index',
+                    component: {$model}Index,
+                    meta: {title: 'routes.titles.{$routeName}', description: 'routes.descriptions.{$routeName}', requiresAuth: true},
+                },
+                {
+                    path: 'edit',
+                    name: 'pages.{$routeName}.edit',
+                    component: {$model}Form,
+                    meta: {title: 'routes.titles.edit_{$model}', description: 'routes.descriptions.edit_{$model}', requiresAuth: true},
+                },
+                {
+                    path: 'new',
+                    name: 'pages.{$routeName}.new',
+                    component: {$model}Form,
+                    meta: {title: 'routes.titles.new_{$model}', description: 'routes.descriptions.new_{$model}', requiresAuth: true},
+                },
+            ],
+        },\n";
+
+        // Find the last route entry
+        $lastBracketPos = strrpos($content, "]");
+        if ($lastBracketPos !== false) {
+            $content = substr_replace($content, $routes, $lastBracketPos - 1, 0);
+        }
+
+        file_put_contents($routerFile, $content);
+        $this->info("Vue routes for {$model} added successfully.");
+    }
+
+    private function generateIndexComponent($model, $columns)
+    {
+        $indexStub = $this->getStub('vue/index.stub');
+
+        // Generate table headers
+        $tableHeaders = '';
+        foreach ($columns as $column) {
+            $tableHeaders .= "<th scope=\"col\" class=\"py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 lg:pl-8\">\$t('common.{$column['name']}')</th>\n";
+        }
+
+        // Generate table body rows
+        $tableBodyRows = '';
+        foreach ($columns as $column) {
+            $tableBodyRows .= "<td class=\"whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8\">{{ item.{$column['name']} }}</td>\n";
+        }
+
+        // Replace placeholders in the stub
+        $indexComponent = str_replace('{{tableHeaders}}', $tableHeaders, $indexStub);
+        $indexComponent = str_replace('{{tableBodyRows}}', $tableBodyRows, $indexComponent);
+        $indexComponent = str_replace('{{modelName}}', $model, $indexComponent);
+        $indexComponent = str_replace('{{routePath}}', strtolower($model), $indexComponent);
+
+        // Use the correct base path for file generation
+        $indexPath = resource_path("js/components/{$model}/Index.vue");
+        
+        // Ensure the directory exists
+        if (!file_exists(dirname($indexPath))) {
+            mkdir(dirname($indexPath), 0777, true);
+        }
+
+        File::put($indexPath, $indexComponent);
+        $this->info("{$model} index component created successfully.");
     }
 }

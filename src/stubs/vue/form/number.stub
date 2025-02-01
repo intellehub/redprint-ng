@@ -1,0 +1,4 @@
+<el-input-number
+    v-model="form.{{name}}"
+    :placeholder="$t('common.enter_{{name}}')"
+/> 

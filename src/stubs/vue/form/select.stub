@@ -1,0 +1,13 @@
+<el-select
+    v-model="form.{{name}}"
+    :placeholder="$t('common.select_{{name}}')"
+    clearable
+>
+    {{#each enumValues}}
+    <el-option
+        :key="{{this}}"
+        :label="{{this}}"
+        :value="{{this}}"
+    />
+    {{/each}}
+</el-select> 

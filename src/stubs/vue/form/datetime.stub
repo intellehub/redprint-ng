@@ -1,0 +1,5 @@
+<el-date-picker
+    v-model="form.{{name}}"
+    type="datetime"
+    :placeholder="$t('common.select_{{name}}')"
+/> 

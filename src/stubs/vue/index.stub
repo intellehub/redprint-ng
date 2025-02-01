@@ -6,7 +6,7 @@
                     <div class="mt-2">
                         <input
                             type="text"
-                            v-model="searchQuery.name"
+                            v-model="searchQuery.{{modelFirstColumn}}"
                             @input="handleSearch"
                             :placeholder="$t('common.search')"
                             class="w-full rounded-lg border-[1.5px] text-black border-stroke bg-transparent py-2 px-5 font-normal outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:text-white dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
@@ -24,35 +24,13 @@
                         <el-container v-loading="loading" class="w-full">
                             <table class="min-w-full divide-y divide-gray">
                                 <thead>
-                                <tr>
-                                    {{#each columns}}
-                                    <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 lg:pl-8">
-                                        {{ $t('common.{{this.name}}') }}</th>
-                                    {{/each}}
-                                    <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6 lg:pr-8">
-                                        <span class="sr-only">{{ $t('common.actions') }}</span>
-                                    </th>
-                                </tr>
+                                    <tr>
+                                        {{tableHeaders}}
+                                    </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray bg-white">
                                     <tr v-for="item in items" :key="item.id">
-                                        {{#each columns}}
-                                        {{#if this.type === 'boolean'}}
-                                        <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">
-                                            <el-tag :type="item.{{this.name}} ? 'success' : 'danger'">
-                                                {{ item.{{this.name}} ? $t('common.yes') : $t('common.no') }}
-                                            </el-tag>
-                                        </td>
-                                        {{else if this.type === 'date' || this.type === 'dateTime'}}
-                                        <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">
-                                            {{ item.{{this.name}} ? new Date(item.{{this.name}}).toLocaleDateString() : '' }}
-                                        </td>
-                                        {{else}}
-                                        <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">
-                                            {{ item.{{this.name}} }}
-                                        </td>
-                                        {{/if}}
-                                        {{/each}}
+                                        {{tableBodyRows}}
                                         <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">
                                             <div class="float-right">
                                                 <el-button size="small" type="primary" plain @click="gotoEdit(item)">
@@ -96,7 +74,7 @@
 </template>
 
 <script>
-{{axiosImport}}
+import axios from 'axios';
 import {_} from 'lodash'
 import Empty from "@/components/Common/Empty.vue"
 
@@ -106,7 +84,7 @@ export default {
         return {
             items: [],
             searchQuery: {
-                name: ''
+                {{modelFirstColumn}}: ''
             },
             currentPage: 1,
             paginationTotal: 0,
@@ -116,7 +94,7 @@ export default {
     methods: {
         fetchItems() {
             this.loading = true
-            {{axiosCall}}.get(`{{routePath}}`, {
+            axios.get(`{{routePath}}`, {
                 params: {
                     ...this.searchQuery,
                     page: this.currentPage
@@ -140,16 +118,16 @@ export default {
             this.fetchItems()
         },
         deleteItem(id) {
-            {{axiosCall}}.delete(`{{routePath}}/${id}`)
+            axios.delete(`{{routePath}}/${id}`)
                 .then(() => {
                     this.fetchItems()
                 })
         },
         gotoNew() {
-            this.$router.push({ name: 'pages.{{routeName}}.new' })
+            this.$router.push({ name: 'pages.{{modelName}}.new' })
         },
         gotoEdit(item) {
-            this.$router.push({ name: 'pages.{{routeName}}.edit', query: { id: item.id }})
+            this.$router.push({ name: 'pages.{{modelName}}.edit', query: { id: item.id }})
         }
     },
     mounted() {
