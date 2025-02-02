@@ -17,12 +17,10 @@ class MakeCrudCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'redprint:crud 
-        {model : The name of the model}
-        {--namespace= : The namespace for the generated files}
-        {--route-prefix= : The route prefix for API endpoints}
-        {--soft-deletes=false : Whether to include soft deletes}
-        {--layout= : The layout component to wrap the page with}';
+    protected $signature = 'make:crud {model} 
+        {--namespace=App} 
+        {--route-prefix=} 
+        {--soft-deletes}';
 
     /**
      * The console command description.

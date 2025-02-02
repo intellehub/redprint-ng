@@ -1,0 +1,29 @@
+<template>
+    <DefaultLayout>
+        <div class="mx-auto">
+            <router-view v-slot="{ Component, route }">
+                <component :is="Component" :key="route.path"/>
+            </router-view>
+        </div>
+    </DefaultLayout>
+</template>
+
+<script>
+import DefaultLayout from '@/layouts/DefaultLayout.vue'
+
+export default {
+    name: `Default Router View`,
+    data() {
+        return {}
+    },
+    computed: {
+      pageTitle() {
+          return this.$route.meta.title
+      }
+    },
+    components: {
+        DefaultLayout
+    }
+}
+
+</script>

@@ -56,7 +56,6 @@ class VueGenerator
         $this->generateCommonComponents();
         $this->generateIndexComponent();
         $this->generateFormComponent();
-        $this->generatePageComponent();
         $this->updateRouter();
     }
 
@@ -126,35 +125,6 @@ class VueGenerator
         );
     }
 
-    public function generatePageComponent(): bool
-    {
-        // Choose the appropriate stub based on whether a layout is specified
-        $stubName = $this->modelData['layout'] 
-            ? 'vue/page-with-layout.stub'
-            : 'vue/page.stub';
-        
-        $replacements = [
-            'modelName' => $this->modelData['model'],
-            'routePrefix' => $this->modelData['routePrefix']
-        ];
-
-        // Add layout replacement if using layout
-        if ($this->modelData['layout']) {
-            $replacements['layout'] = $this->modelData['layout'];
-        }
-
-        $content = $this->stubService->processStub(
-            $this->stubService->getStub($stubName),
-            $replacements
-        );
-
-        $path = $this->basePath . '/resources/js/pages/' . 
-                $this->modelData['model'] . '.vue';
-        File::put($path, $content);
-
-        return true;
-    }
-
     public function updateRouter(): bool
     {
         $routerPath = "{$this->basePath}/resources/js/router/routes.ts";
@@ -203,7 +173,7 @@ class VueGenerator
 
     public function generateCommonComponents(): bool
     {
-        $commonComponents = ['Empty', 'FormError', 'InputGroup'];
+        $commonComponents = ['Empty', 'FormError', 'InputGroup', 'DefaultRouterView'];
         
         foreach ($commonComponents as $component) {
             // Load from .stub file

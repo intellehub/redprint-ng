@@ -1,7 +1,7 @@
 {
   path: '/{{ routePath }}',
   name: 'pages.{{ routePath }}',
-  component: () => import('@/pages/{{ modelName }}.vue'),
+  component: DefaultRouterView,
   children: [
     {
       path: '',
