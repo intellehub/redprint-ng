@@ -1,0 +1,37 @@
+{
+  path: '/{{ routePath }}',
+  name: 'pages.{{ routePath }}',
+  component: () => import('@/pages/{{ modelName }}.vue'),
+  children: [
+    {
+      path: '',
+      name: 'pages.{{ routePath }}.index',
+      component: () => import('@/components/{{ modelName }}/Index.vue'),
+      meta: {
+        title: 'routes.titles.{{ routePath }}',
+        description: 'routes.descriptions.{{ routePath }}',
+        requiresAuth: true
+      }
+    },
+    {
+      path: 'edit/:id',
+      name: 'pages.{{ routePath }}.edit',
+      component: () => import('@/components/{{ modelName }}/Form.vue'),
+      meta: {
+        title: 'routes.titles.edit_{{ modelLower }}',
+        description: 'routes.descriptions.edit_{{ modelLower }}',
+        requiresAuth: true
+      }
+    },
+    {
+      path: 'new',
+      name: 'pages.{{ routePath }}.new',
+      component: () => import('@/components/{{ modelName }}/Form.vue'),
+      meta: {
+        title: 'routes.titles.new_{{ modelLower }}',
+        description: 'routes.descriptions.new_{{ modelLower }}',
+        requiresAuth: true
+      }
+    }
+  ]
+} 

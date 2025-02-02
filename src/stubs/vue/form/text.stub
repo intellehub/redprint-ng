@@ -1,5 +1,5 @@
 <el-input
-    v-model="form.{{name}}"
+    v-model="form.{{ name }}"
     type="textarea"
-    :placeholder="$t('common.enter_{{name}}')"
+    :placeholder="$t('common.enter_{{ name }}')"
 /> 

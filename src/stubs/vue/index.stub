@@ -6,7 +6,7 @@
                     <div class="mt-2">
                         <input
                             type="text"
-                            v-model="searchQuery.{{modelFirstColumn}}"
+                            v-model="searchQuery.{{ modelFirstColumn }}"
                             @input="handleSearch"
                             :placeholder="$t('common.search')"
                             class="w-full rounded-lg border-[1.5px] text-black border-stroke bg-transparent py-2 px-5 font-normal outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:text-white dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
@@ -25,17 +25,18 @@
                             <table class="min-w-full divide-y divide-gray">
                                 <thead>
                                     <tr>
-                                        {{tableHeaders}}
+                                        {{ tableHeaderItems }}
+                                        <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6 lg:pr-8">
+                                            <span class="sr-only">{{ $t('common.actions') }}</span>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray bg-white">
                                     <tr v-for="item in items" :key="item.id">
-                                        {{tableBodyRows}}
+                                        {{ tableBodyItems }}
                                         <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">
                                             <div class="float-right">
-                                                <el-button size="small" type="primary" plain @click="gotoEdit(item)">
-                                                    {{ $t('common.edit') }}
-                                                </el-button>
+                                                <el-button size="small" type="primary" plain @click="gotoEdit(item)">{{ $t('common.edit') }}</el-button>
                                                 <el-popconfirm
                                                     :confirm-button-text="$t('common.delete')"
                                                     icon-color="#626AEF"
@@ -44,9 +45,7 @@
                                                     confirm-button-type="danger"
                                                 >
                                                     <template #reference>
-                                                        <el-button size="small" class="float-right mr-2" plain type="danger">
-                                                            {{ $t('common.delete') }}
-                                                        </el-button>
+                                                        <el-button size="small" class="float-right mr-2" plain type="danger">{{ $t('common.delete') }}</el-button>
                                                     </template>
                                                 </el-popconfirm>
                                             </div>
@@ -79,12 +78,12 @@ import {_} from 'lodash'
 import Empty from "@/components/Common/Empty.vue"
 
 export default {
-    name: '{{modelName}}Index',
+    name: '{{ modelName }}Index',
     data() {
         return {
             items: [],
             searchQuery: {
-                {{modelFirstColumn}}: ''
+                {{ modelFirstColumn }}: ''
             },
             currentPage: 1,
             paginationTotal: 0,
@@ -94,7 +93,7 @@ export default {
     methods: {
         fetchItems() {
             this.loading = true
-            axios.get(`{{routePath}}`, {
+            axios.get(`{{ routePath }}`, {
                 params: {
                     ...this.searchQuery,
                     page: this.currentPage
@@ -118,16 +117,16 @@ export default {
             this.fetchItems()
         },
         deleteItem(id) {
-            axios.delete(`{{routePath}}/${id}`)
+            axios.delete(`{{ routePath }}/${id}`)
                 .then(() => {
                     this.fetchItems()
                 })
         },
         gotoNew() {
-            this.$router.push({ name: 'pages.{{modelName}}.new' })
+            this.$router.push({ name: 'pages.{{ routeName }}.new' })
         },
         gotoEdit(item) {
-            this.$router.push({ name: 'pages.{{modelName}}.edit', query: { id: item.id }})
+            this.$router.push({ name: 'pages.{{ routeName }}.edit', query: { id: item.id }})
         }
     },
     mounted() {

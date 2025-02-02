@@ -1,0 +1,15 @@
+    public function deleteFromTrash($id)
+    {
+        $model = {{ model }}::withTrashed()->findOrFail($id);
+        $model->forceDelete();
+        
+        return response()->json(['message' => '{{ model }} permanently deleted'], 204);
+    }
+
+    public function restore($id)
+    {
+        $model = {{ model }}::withTrashed()->findOrFail($id);
+        $model->restore();
+        
+        return response()->json(['message' => '{{ model }} restored successfully']);
+    } 

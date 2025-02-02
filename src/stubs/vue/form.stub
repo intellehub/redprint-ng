@@ -1,86 +1,99 @@
 <template>
-    <div class="max-w-2xl mx-auto">
-        <h1 class="text-2xl font-bold mb-6">{{ isEditing ? 'Edit' : 'New' }} {{modelName}}</h1>
+  <div class="grid grid-cols-1 text-left justify-normal">
+    <div class="col-span-5 xl:col-span-3 my-5 text-left">
+      <div
+        class="rounded-sm border border-stroke bg-white dark:border-strokedark dark:bg-boxdark"
+      >
+        <div class="flex-row">
+          <el-alert
+            v-if="mainError"
+            :title="$t('messages.save_error')"
+            type="error"
+            :description="mainError"
+            show-icon
+          />
+        </div>
 
-        <form @submit.prevent="save" class="space-y-4">
-            {{inputFields}}
-            <div class="flex justify-end space-x-3">
-                <router-link 
-                    :to="{ name: 'pages.{{modelName}}.index' }"
-                    class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                    {{ $t('common.cancel') }}
-                </router-link>
-                <button 
-                    type="submit"
-                    :disabled="loading"
-                    class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
-                >
-                    {{ loading ? $t('common.saving') : $t('common.save') }}
-                </button>
+        <div class="p-7">
+          <form @submit.prevent="save">
+            {{ inputFields }}
+            <!-- Save and Cancel Buttons -->
+            <div class="flex justify-end gap-0">
+              <el-button :loading="loading" @click.prevent="cancel" type="danger" plain>{{ $t('common.cancel') }}</el-button>
+              <el-button :loading="loading" @click.prevent="save" type="primary" plain>{{ $t('common.save') }}</el-button>
             </div>
-        </form>
+          </form>
+        </div>
+      </div>
     </div>
+  </div>
 </template>
 
 <script>
-{{axiosImport}}
+{{ axiosImport }}
 import InputGroup from '@/components/Common/InputGroup.vue'
+import FormError from '@/components/Common/FormError.vue'
 
 export default {
-    name: '{{modelName}}Form',
-    components: {
-        InputGroup
-    },
-    data() {
-        return {
-            form: {
-                {{formInputVariables}}
-            },
-            errors: {},
-            loading: false,
-            isEditing: false
-        }
-    },
-    methods: {
-        async fetchItem() {
-            if (!this.id) return
-
-            try {
-                const response = await axios.get(`post/${this.id}`)
-                this.form = response.data.data
-                this.isEditing = true
-            } catch (error) {
-                console.error('Error fetching item:', error)
-            }
-        },
-        async save() {
-            this.loading = true
-            this.errors = {}
-
-            try {
-                const payload = { ...this.form }
-                if (this.isEditing) {
-                    payload.id = this.id
-                }
-
-                await axios.post(`post/save`, payload)
-                this.$router.push({ name: 'pages.{{modelName}}.index' })
-            } catch (error) {
-                if (error.response?.data?.errors) {
-                    this.errors = error.response.data.errors
-                }
-                console.error('Error saving:', error)
-            } finally {
-                this.loading = false
-            }
-        }
-    },
-    mounted() {
-        if (this.$route.query.id) {
-            this.id = this.$route.query.id
-            this.fetchItem()
-        }
+  name: '{{ modelName }}Form',
+  data() {
+    return {
+      form: {
+        {{ formInputVariables }}
+      },
+      id: null,
+      loading: false,
+      mainError: null,
+      validationErrors: [],
+      isEditing: false
     }
+  },
+  methods: {
+    fetchItem() {
+      var self = this
+      if (!this.id) return
+      this.loading = true
+      {{ axiosInstance }}.get(`{{ routePath }}/${this.id}`).then((response) => {
+        this.form = response.data.data
+        this.isEditing = true
+        this.loading = false
+      }).catch((error) => {
+        self.loading = false
+        // console.log(error)
+      })
+    },
+    async save() {
+      var self = this
+      const payload = { ...this.form }
+      if (this.isEditing) {
+        payload.id = this.id
+      }
+
+      {{ axiosInstance }}.post(`{{ routePath }}/save`, payload).then(() => {
+        self.loading = false
+        self.$message({type: 'success', message: self.$t('messages.save_success')})
+        self.$router.push({ name: 'pages.{{ routeName }}.index' })
+      }).catch((e) => {
+        self.$message({type: 'error', message: self.$t('messages.save_error')})
+        self.loading = false
+        if (e.response.status === 422) {
+          // self.validationErrors = e.response.data.errors
+        }
+      })
+    },
+    cancel() {
+      this.$router.push({ name: 'pages.{{ routeName }}.index' })
+    },
+  },
+  mounted() {
+    if (this.$route.query.id) {
+      this.id = this.$route.query.id
+      this.fetchItem()
+    }
+  },
+  components: {
+    InputGroup,
+    FormError
+  }
 }
 </script>

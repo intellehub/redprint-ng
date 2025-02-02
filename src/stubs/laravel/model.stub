@@ -1,15 +1,11 @@
 <?php
 
-namespace App\Models;
+namespace {{ namespace }};
 
 use Illuminate\Database\Eloquent\Model;
-{{softDeletes}}
+{{ useSoftDeletes }}
 
-class {{modelName}} extends Model
+class {{ modelName }} extends Model
 {
-    {{useSoftDeletes}}
-
-    protected $fillable = [
-        'name',
-    ];
+    protected $guarded = ['id'];
 }

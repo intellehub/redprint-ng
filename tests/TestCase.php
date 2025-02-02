@@ -2,110 +2,68 @@
 
 namespace Shahnewaz\RedprintNg\Tests;
 
-use Orchestra\Testbench\TestCase as Orchestra;
-use Shahnewaz\RedprintNg\RedprintServiceProvider;
+use Orchestra\Testbench\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\File;
 
-class TestCase extends Orchestra
+class TestCase extends BaseTestCase
 {
-    protected function getPackageProviders($app)
-    {
-        return [
-            RedprintServiceProvider::class,
-        ];
-    }
+    protected $testFilesPath;
 
     protected function setUp(): void
     {
         parent::setUp();
         
-        // Create a mock package.json with required dependencies
-        $packageJson = [
-            'dependencies' => [
-                'tailwindcss' => '^3.0.0',
-                'element-plus' => '^2.0.0',
-                'axios' => '^1.0.0',
-                'vue' => '^3.0.0',
-                'vue-router' => '^4.0.0',
-                'vue-i18n' => '^9.0.0',
-                'lodash' => '^4.0.0',
-            ]
-        ];
-
-        // Ensure base directories exist
-        $this->createDirectories();
-
-        // Create the package.json file in the test environment
-        File::put(base_path('package.json'), json_encode($packageJson, JSON_PRETTY_PRINT));
-
-        // Create a mock Vue router file
-        $routerDir = resource_path('js/router');
-        if (!File::exists($routerDir)) {
-            File::makeDirectory($routerDir, 0755, true);
+        // Create temp directory if it doesn't exist
+        $this->testFilesPath = __DIR__ . '/../temp_files';
+        if (!file_exists($this->testFilesPath)) {
+            mkdir($this->testFilesPath, 0777, true);
         }
-        
-        File::put(resource_path('js/router/routes.ts'), $this->getInitialRouterContent());
+
+        $this->createDirectories();
+        $this->createMockPackageJson();
     }
 
     protected function createDirectories()
     {
         $directories = [
-            app_path('Models'),
-            app_path('Http/Controllers'),
-            app_path('Http/Resources'),
-            resource_path('js/pages'),
-            resource_path('js/components'),
-            resource_path('js/layouts'),
-            resource_path('js/router'),
-            database_path('migrations'),
+            $this->testFilesPath . '/app/Models',
+            $this->testFilesPath . '/app/Http/Controllers',
+            $this->testFilesPath . '/app/Http/Resources',
+            $this->testFilesPath . '/resources/js/pages',
+            $this->testFilesPath . '/resources/js/components',
+            $this->testFilesPath . '/resources/js/layouts',
+            $this->testFilesPath . '/resources/js/router',
+            $this->testFilesPath . '/database/migrations',
         ];
 
         foreach ($directories as $directory) {
             if (!File::exists($directory)) {
-                File::makeDirectory($directory, 0755, true);
+                File::makeDirectory($directory, 0777, true);
             }
         }
     }
 
-    protected function getInitialRouterContent()
+    protected function createMockPackageJson()
     {
-        return <<<'TS'
-import { createRouter, createWebHistory } from 'vue-router'
-
-const routes = [
-    // Existing routes will be added here
-]
-
-export default createRouter({
-    history: createWebHistory(),
-    routes
-})
-TS;
-    }
-
-    protected function tearDown(): void
-    {
-        // Clean up all test directories
-        $directories = [
-            app_path('Models'),
-            app_path('Http/Controllers'),
-            app_path('Http/Resources'),
-            resource_path('js'),
-            database_path('migrations'),
+        $packageJson = [
+            'dependencies' => [
+                'vue' => '^3.0.0',
+                'vue-router' => '^4.0.0'
+            ],
+            'devDependencies' => [
+                '@vitejs/plugin-vue' => '^4.0.0',
+                'vite' => '^4.0.0'
+            ]
         ];
 
-        foreach ($directories as $directory) {
-            if (File::exists($directory)) {
-                File::deleteDirectory($directory);
-            }
-        }
+        File::put($this->testFilesPath . '/package.json', json_encode($packageJson, JSON_PRETTY_PRINT));
+    }
 
-        // Clean up the mock package.json
-        if (File::exists(base_path('package.json'))) {
-            File::delete(base_path('package.json'));
-        }
-
-        parent::tearDown();
+    protected function getPackageProviders($app)
+    {
+        return [
+            'Shahnewaz\RedprintNg\Providers\RedprintServiceProvider'
+        ];
     }
 
     /**

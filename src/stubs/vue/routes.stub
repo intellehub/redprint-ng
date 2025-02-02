@@ -1,0 +1,16 @@
+import DefaultRouterView from '@/pages/DefaultRouterView.vue'
+import App from "@/layouts/App.vue";
+import NotFound from "@/pages/NotFound.vue";
+
+export const appRoutes = [
+    {
+        path: '/:pathMatch(.*)*',
+        name: 'not-found',
+        component: NotFound,
+        meta: {
+            title: 'routes.titles.not_found',
+            description: 'routes.descriptions.not_found',
+            requiresAuth: false
+        }
+    }
+] 

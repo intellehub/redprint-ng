@@ -5,6 +5,7 @@ namespace Shahnewaz\RedprintNg\Tests\Feature;
 use Shahnewaz\RedprintNg\Tests\TestCase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Artisan;
+use Shahnewaz\RedprintNg\Commands\MakeCrudCommand;
 
 class MakeCrudCommandTest extends TestCase
 {
@@ -64,20 +65,35 @@ class MakeCrudCommandTest extends TestCase
             ],
         ];
 
-        // Get a fresh instance of the command
-        $command = new \Shahnewaz\RedprintNg\Commands\MakeCrudCommand();
-        $command->setColumns($columns);
-        $command->setBasePath($this->testFilesPath);
+        // Create model data with all required fields
+        $modelData = [
+            'model' => 'Post',
+            'namespace' => 'Blog',
+            'routePrefix' => 'blog',
+            'softDeletes' => true,
+            'layout' => 'DefaultLayout',
+            'columns' => $columns,
+            'basePath' => $this->testFilesPath
+        ];
 
-        // Register the command instance
-        $this->app['Illuminate\Contracts\Console\Kernel']->registerCommand($command);
+        // Create a mock of the command that will return our model data
+        $command = $this->getMockBuilder(MakeCrudCommand::class)
+            ->onlyMethods(['getModelData'])
+            ->getMock();
+        
+        $command->method('getModelData')
+            ->willReturn($modelData);
+
+        // Bind the mock to the container
+        $this->app->instance(MakeCrudCommand::class, $command);
 
         // Run the command
         $exitCode = Artisan::call('redprint:crud', [
-            '--model' => 'Post',
+            'model' => 'Post',
             '--namespace' => 'Blog',
             '--route-prefix' => 'blog',
             '--soft-deletes' => 'true',
+            '--layout' => 'DefaultLayout'
         ]);
 
         // Get the output for debugging

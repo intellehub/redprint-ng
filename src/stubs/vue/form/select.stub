@@ -1,6 +1,6 @@
 <el-select
-    v-model="form.{{name}}"
-    :placeholder="$t('common.select_{{name}}')"
+    v-model="form.{{ name }}"
+    :placeholder="$t('common.select_{{ name }}')"
     clearable
 >
     {{#each enumValues}}

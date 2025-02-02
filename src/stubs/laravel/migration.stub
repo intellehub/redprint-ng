@@ -8,16 +8,16 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('{{tableName}}', function (Blueprint $table) {
+        Schema::create('{{ tableName }}', function (Blueprint $table) {
             $table->id();
-{{columnDefinitions}}
+            {{ columnDefinitions }}
+            {{ softDeletesColumn }}
             $table->timestamps();
-            {{softDeletesColumn}}
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('{{tableName}}');
+        Schema::dropIfExists('{{ tableName }}');
     }
 };

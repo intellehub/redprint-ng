@@ -1,56 +1,48 @@
 <?php
 
-namespace {{namespace}};
+namespace {{ namespace }};
 
-use App\Http\Controllers\Controller;
-use App\Models\{{modelName}};
-use App\Http\Resources\{{modelName}}Resource;
+use App\Models\{{ modelName }};
+use App\Http\Resources\{{ modelName }}Resource;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 
-class {{modelName}}Controller extends Controller
+class {{ modelName }}Controller extends Controller
 {
-    public function getIndex(Request $request)
+    public function getIndex()
     {
-        $query = {{modelName}}::query();
-
-        if ($request->has('name')) {
-            $query->where('name', 'like', '%' . $request->get('name') . '%');
-        }
-
-        return {{modelName}}Resource::collection(
-            $query->paginate($request->get('per_page', 10))
-        );
+        $models = {{ modelName }}::paginate(10);
+        return {{ modelName }}Resource::collection($models);
     }
 
     public function show($id)
     {
-        $model = {{modelName}}::findOrFail($id);
-        return new {{modelName}}Resource($model);
+        $model = {{ modelName }}::findOrFail($id);
+        return new {{ modelName }}Resource($model);
     }
 
-    public function save(Request $request)
+    public function save(Request $request, $id = null)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-        ]);
-
-        if ($request->has('id')) {
-            $model = {{modelName}}::findOrFail($request->id);
-            $model->update($request->all());
+        if ($id) {
+            $model = {{ modelName }}::findOrFail($id);
         } else {
-            $model = {{modelName}}::create($request->all());
+            $model = new {{ modelName }};
         }
 
-        return new {{modelName}}Resource($model);
+        {{ columnAssignments }}
+        
+        $model->save();
+        
+        return new {{ modelName }}Resource($model);
     }
 
     public function delete($id)
     {
-        $model = {{modelName}}::findOrFail($id);
+        $model = {{ modelName }}::findOrFail($id);
         $model->delete();
-
-        return response()->json(['message' => '{{modelName}} deleted successfully']);
+        
+        return response()->json(['message' => '{{ modelName }} deleted successfully']);
     }
 
-    {{softDeleteMethods}}
+    {{ softDeleteMethods }}
 }

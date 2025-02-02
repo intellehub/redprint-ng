@@ -8,18 +8,33 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Illuminate\Support\Facades\File;
+use Shahnewaz\RedprintNg\Services\FileService;
+use Shahnewaz\RedprintNg\Generators\LaravelGenerator;
+use Shahnewaz\RedprintNg\Generators\VueGenerator;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Output\NullOutput;
 
 class MakeCrudCommand extends Command
 {
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
     protected $signature = 'redprint:crud 
-        {--model= : The name of the model}
-        {--namespace= : The namespace for the controller}
-        {--route-prefix= : The route prefix}
+        {model : The name of the model}
+        {--namespace= : The namespace for the generated files}
+        {--route-prefix= : The route prefix for API endpoints}
         {--soft-deletes=false : Whether to include soft deletes}
         {--layout= : The layout component to wrap the page with}
-        {--columns= : JSON string of columns configuration}';
+        {--base-path= : The base path for file generation}';
 
-    protected $description = 'Create a new CRUD module';
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Generate CRUD files for a model';
 
     private $supportedDataTypes = [
         'string',
@@ -38,78 +53,128 @@ class MakeCrudCommand extends Command
     ];
 
     private $columns = [];
-    private $basePath;
+    protected string $basePath;
     private $isInteractive = true;
+    private array $requiredPackages = [
+        'vue',
+        'element-plus',
+        'tailwindcss',
+        'axios',
+        'vue-router',
+        'vue-i18n',
+        'lodash'
+    ];
 
-    protected function configure()
+    private array $modelData = [];
+
+    public function __construct()
     {
-        $this->addOption(
-            'columns',
-            null,
-            InputOption::VALUE_OPTIONAL,
-            'JSON string of columns configuration'
-        );
+        parent::__construct();
+        $this->basePath = $basePath;
+        $this->output = new NullOutput();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         try {
-            // Get command options
-            $model = $input->getOption('model');
-            if (!$model) {
-                $output->writeln('<error>Model name is required!</error>');
-                return 1;
-            }
+            $this->validateRequirements();
+            $this->createDirectoryStructure();
+            
+            $modelData = $this->getModelData();
+            
+            // Generate Laravel files
+            $laravelGenerator = new LaravelGenerator($this->basePath, $modelData, $this);
+            $this->generateLaravelFiles($laravelGenerator);
 
-            $namespace = $input->getOption('namespace');
-            $routePrefix = $input->getOption('route-prefix');
-            $softDeletes = $input->getOption('soft-deletes');
-            $layout = $input->getOption('layout');
-            $axiosInstance = config('redprint.axios_instance', 'axios');
+            // Generate Vue files
+            $vueGenerator = new VueGenerator($this->basePath, $modelData, $this);
+            $this->generateVueFiles($vueGenerator);
 
-            // Use provided base path or fall back to Laravel's base_path()
-            $this->basePath = $this->basePath ?? base_path();
-
-            // Create necessary directories
-            $this->createDirectories($this->basePath);
-
-            // Create route files
-            $this->createRouteFiles();
-
-            $apiFilePath = $this->basePath . '/routes/api.php';
-            if (File::exists($apiFilePath)) {
-                $apiContent = File::get($apiFilePath);
-                // Process the content if needed
-            }
-
-            // Skip prompting if columns are already set
-            if (empty($this->columns) && $this->isInteractive) {
-                $this->columns = $this->promptForColumns();
-            }
-
-            // Validate columns
-            if (empty($this->columns)) {
-                $output->writeln('<error>No columns defined!</error>');
-                return 1;
-            }
-
-            // Generate files
-            $this->checkDependencies();
-            $this->copyCommonComponents();
-            $this->generateMigration($model, $this->columns, $softDeletes);
-            $this->generateModel($model, $namespace);
-            $this->generateController($model, $namespace,);
-            $this->generateResource($model);
-            $this->createVueComponents();
-            $this->updateLaravelRoutes($model, $namespace, $routePrefix);
-
-            $output->writeln('<info>CRUD generated successfully!</info>');
+            $this->info('CRUD generation completed successfully!');
             return 0;
-
         } catch (\Exception $e) {
-            $output->writeln('<error>' . $e->getMessage() . '</error>');
+            $this->error($e->getMessage());
             return 1;
         }
+    }
+
+    private function validateRequirements(): void
+    {
+        if (!$this->argument('model')) {
+            throw new \RuntimeException('Model name is required');
+        }
+
+        $this->validatePackageJson();
+    }
+
+    private function validatePackageJson(): void
+    {
+        $packageJsonPath = "{$this->basePath}/package.json";
+        if (!file_exists($packageJsonPath)) {
+            throw new \RuntimeException('package.json not found in '.$packageJsonPath);
+        }
+
+        $packageJson = json_decode(file_get_contents($packageJsonPath), true);
+        $dependencies = array_merge(
+            $packageJson['dependencies'] ?? [],
+            $packageJson['devDependencies'] ?? []
+        );
+
+        foreach ($this->requiredPackages as $package) {
+            if (!isset($dependencies[$package])) {
+                throw new \RuntimeException("Required package {$package} not found in package.json");
+            }
+        }
+    }
+
+    private function createDirectoryStructure(): void
+    {
+        $fileService = new FileService();
+        $directories = [
+            'routes',
+            'resources/js/components',
+            'resources/js/components/Common',
+            "resources/js/components/{$this->argument('model')}",
+            'resources/js/pages',
+        ];
+
+        foreach ($directories as $directory) {
+            $fileService->ensureDirectoryExists("{$this->basePath}/{$directory}");
+        }
+    }
+
+    public function getModelData(): array
+    {
+        return [
+            'model' => $this->argument('model'),
+            'namespace' => $this->option('namespace'),
+            'routePrefix' => $this->option('route-prefix') ?? config('redprint.route_prefix', 'api/v1'),
+            'softDeletes' => $this->option('soft-deletes'),
+            'layout' => $this->option('layout'),
+            'columns' => config('redprint.columns', []),
+            'basePath' => $this->basePath,
+            'axios_instance' => config('redprint.axios_instance')
+        ];
+    }
+
+    private function generateLaravelFiles(LaravelGenerator $generator): void
+    {
+        $this->info('Generating Laravel files...');
+        $generator->generateMigration();
+        $generator->generateModel();
+        $generator->generateController();
+        $generator->generateResource();
+        $generator->updateRoutes();
+    }
+
+    private function generateVueFiles(VueGenerator $generator): void
+    {
+        $this->info('Generating Vue files...');
+        $generator->generateCommonComponents();
+        $generator->generateIndexComponent();
+        $generator->generateFormComponent();
+        $generator->generatePageComponent();
+        $generator->updateRouter();
     }
 
     private function checkDependencies()
@@ -426,7 +491,7 @@ class MakeCrudCommand extends Command
 
     private function createVueComponents()
     {
-        $model = $this->option('model');
+        $model = $this->argument('model');
         
         // Ensure directories exist first
         $this->ensureDirectoriesExist();
@@ -723,26 +788,6 @@ import {$model}Form from \"@/components/{$model}/Form.vue\";
     }";
     }
 
-    private function ensureDirectoriesExist()
-    {
-        $model = $this->option('model');
-        $directories = [
-            'routes',
-            'resources/js/components',
-            'resources/js/components/Common',
-            "resources/js/components/{$model}",
-            'resources/js/pages',
-        ];
-
-        foreach ($directories as $directory) {
-            $path = $this->basePath . '/' . $directory;
-            if (!file_exists($path)) {
-                if (!mkdir($path, 0777, true) && !is_dir($path)) {
-                    throw new \RuntimeException(sprintf('Directory "%s" was not created', $path));
-                }
-            }
-        }
-    }
 
     private function getStub($path)
     {
@@ -757,5 +802,171 @@ import {$model}Form from \"@/components/{$model}/Form.vue\";
         }
 
         return file_get_contents($stubPath);
+    }
+
+    /**
+     * Execute the console command.
+     */
+    public function handle()
+    {
+        try {
+            $modelData = $this->getModelData();
+            
+            if (empty($modelData['columns'])) {
+                throw new \InvalidArgumentException('No columns defined in modelData');
+            }
+
+            // Use basePath from modelData if set, otherwise from command option, fallback to base_path()
+            $basePath = $modelData['basePath'] ?? base_path();
+
+            $this->info('Starting CRUD generation...');
+            $this->info('Using base path: ' . $basePath);
+
+            $this->info('Generating Laravel files...');
+            $laravelGenerator = new LaravelGenerator(
+                $basePath, 
+                array_merge($modelData, ['basePath' => $basePath]),
+                $this
+            );
+            $laravelGenerator->generate();
+
+            $this->info('Generating Vue files...');
+            $vueGenerator = new VueGenerator(
+                $basePath,
+                array_merge($modelData, ['basePath' => $basePath]),
+                $this
+            );
+            $vueGenerator->generate();
+
+            $this->info('CRUD generation completed successfully!');
+            return Command::SUCCESS;
+
+        } catch (\Exception $e) {
+            $this->error($e->getMessage());
+            return Command::FAILURE;
+        }
+    }
+
+    public function setModelData(array $modelData): void
+    {
+        if (empty($modelData['columns'])) {
+            throw new \InvalidArgumentException('Columns must be provided in modelData');
+        }
+
+        // Ensure all required fields are present
+        $requiredFields = ['model', 'namespace', 'routePrefix', 'softDeletes', 'layout', 'columns', 'basePath'];
+        foreach ($requiredFields as $field) {
+            if (!isset($modelData[$field])) {
+                throw new \InvalidArgumentException("Missing required field: {$field}");
+            }
+        }
+
+        $this->modelData = $modelData;
+        $this->info('Model data set: ' . json_encode($this->modelData, JSON_PRETTY_PRINT));
+    }
+
+
+    protected function getBaseRouterContent(): string
+    {
+        return <<<TS
+import DefaultRouterView from '@/pages/DefaultRouterView.vue'
+import App from "@/layouts/App.vue";
+import NotFound from "@/pages/NotFound.vue";
+
+export const appRoutes = [
+    {
+        path: '/:pathMatch(.*)*',
+        name: 'not-found',
+        component: NotFound,
+        meta: {
+            title: 'routes.titles.not_found',
+            description: 'routes.descriptions.not_found',
+            requiresAuth: false
+        }
+    }
+]
+TS;
+    }
+
+    protected function getColumns(): array
+    {
+        // If columns were set via setColumns(), return those
+        if (!empty($this->columns) && !$this->isInteractive) {
+            return $this->columns;
+        }
+
+        // First try to get columns from command option
+        $columnsOption = $this->option('columns');
+        if ($columnsOption) {
+            $columns = json_decode($columnsOption, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $columns;
+            }
+            $this->error('Invalid JSON format for columns');
+        }
+
+        // Then try to get from config
+        $configColumns = config('redprint.columns');
+        if ($configColumns && !$this->confirm('Would you like to define custom columns?', false)) {
+            return $configColumns;
+        }
+
+        // If no columns defined, ask for them interactively
+        $columns = [];
+        do {
+            $name = $this->ask('Column name');
+            $type = $this->choice('Column type', $this->supportedDataTypes, 0);
+            
+            // Additional prompts for enum type
+            $enumValues = [];
+            if ($type === 'enum') {
+                $enumValuesStr = $this->ask('Enter enum values (comma-separated)');
+                $enumValues = array_map('trim', explode(',', $enumValuesStr));
+            }
+            
+            $nullable = $this->confirm('Is this column nullable?', false);
+            $default = $this->ask('Default value (press enter for none)');
+
+            $columns[] = [
+                'name' => $name,
+                'type' => $type,
+                'nullable' => $nullable,
+                'default' => $default ?: null,
+                'enumValues' => $enumValues
+            ];
+
+        } while ($this->confirm('Would you like to add another column?', true));
+
+        return $columns;
+    }
+
+    protected function ensureDirectoriesExist(string $model): void
+    {
+        $basePath = $this->laravel->basePath();
+        
+        $directories = [
+            $basePath . '/app/Models',
+            $basePath . '/app/Http/Controllers',
+            $basePath . '/app/Http/Resources',
+            $basePath . '/resources/js/components/' . $model,
+            $basePath . '/resources/js/pages',
+            $basePath . '/resources/js/layouts',
+            $basePath . '/resources/js/router',
+            $basePath . '/database/migrations',
+        ];
+
+        foreach ($directories as $directory) {
+            if (!is_dir($directory)) {
+                if (!mkdir($directory, 0755, true) && !is_dir($directory)) {
+                    throw new \RuntimeException(sprintf('Directory "%s" was not created', $directory));
+                }
+            }
+        }
+
+        // Ensure router file exists
+        $routerFile = $basePath . '/resources/js/router/routes.ts';
+        if (!file_exists($routerFile)) {
+            file_put_contents($routerFile, $this->getBaseRouterContent());
+        }
     }
 }
