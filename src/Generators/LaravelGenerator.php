@@ -14,7 +14,6 @@ class LaravelGenerator
     private FileService $fileService;
     private string $basePath;
     private array $modelData;
-    private Command $command;
 
     public function __construct(string $basePath, array $modelData, Command $command)
     {
@@ -26,7 +25,6 @@ class LaravelGenerator
         $this->fileService = new FileService();
         $this->basePath = $basePath;
         $this->modelData = $modelData;
-        $this->command = $command;
     }
 
     public function generate(): void
