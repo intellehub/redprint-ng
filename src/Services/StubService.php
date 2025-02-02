@@ -33,7 +33,7 @@ class StubService
         }
         
         // For debugging
-        echo "Processing replacements: " . print_r($replacements, true) . "\n";
+        # DEBUG: echo "Processing replacements: " . print_r($replacements, true) . "\n";
         
         return $content;
     }

@@ -19,8 +19,8 @@ class FileService
             $this->ensureDirectoryExists(dirname($path));
             
             // Debug: Log the content before saving
-            error_log("Writing to file: " . $path);
-            error_log("Content: " . $content);
+            #DEBUG: error_log("Writing to file: " . $path);
+            #DEBUG: error_log("Content: " . $content);
             
             $result = file_put_contents($path, $content);
             

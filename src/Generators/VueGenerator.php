@@ -16,6 +16,31 @@ class VueGenerator
     private array $modelData;
     private Command $command;
 
+    private array $inputTypeMap = [
+        // Numbers
+        'integer' => 'number',
+        'bigInt' => 'number',
+        'float' => 'number',
+        'decimal' => 'number',
+        
+        // Dates
+        'timestamp' => 'datetime',
+        'dateTime' => 'datetime',
+        'date' => 'datetime',
+        
+        // Text
+        'text' => 'text',
+        'longText' => 'text',
+        'mediumText' => 'text',
+        
+        // Boolean
+        'boolean' => 'boolean',
+        'tinyInteger' => 'boolean',
+        
+        // Default
+        'string' => 'string'
+    ];
+
     public function __construct(string $basePath, array $modelData, Command $command)
     {
         $this->stubService = new StubService();
@@ -141,24 +166,26 @@ class VueGenerator
 
         $routerContent = file_get_contents($routerPath);
 
+
+        $model = $this->modelData['model'];
+        $modelLower = Str::lower($model);
+        $modelPlural = Str::plural($modelLower);
+
         // Find the appRoutes array
         if (preg_match('/export\s+const\s+appRoutes\s*=\s*\[([\s\S]*?)]/m', $routerContent, $matches)) {
             $existingRoutes = $matches[1];
-            $newRoute = $this->getNewRouteConfig();
+            
+            // Get and process the new route configuration
+            $routeStub = $this->stubService->getStub('vue/route.stub');
+            $newRoute = $this->stubService->processStub($routeStub,[
+                '{{ routePath }}' => $this->getRouteName(),
+                '{{ modelName }}' => $model,
+                '{{ modelLower }}' => $modelLower,
+                '{{ modelPlural }}' => $modelPlural
+            ]);
 
-            // Add new route before the catch-all route
-            $updatedRoutes = rtrim($existingRoutes);
-            if (strpos($updatedRoutes, 'path: \'/:pathMatch') !== false) {
-                // Insert before the catch-all route
-                $updatedRoutes = str_replace(
-                    '    {',
-                    "    " . trim($newRoute) . ",\n    {",
-                    $updatedRoutes
-                );
-            } else {
-                // Append if no catch-all route found
-                $updatedRoutes .= ($updatedRoutes ? ',' : '') . $newRoute;
-            }
+            // Add new route after the catch-all route
+            $updatedRoutes = rtrim($existingRoutes) . ",\n" . trim($newRoute);
 
             $routerContent = str_replace(
                 $matches[0],
@@ -173,21 +200,6 @@ class VueGenerator
         return false;
     }
 
-    private function getNewRouteConfig(): string
-    {
-        $model = $this->modelData['model'];
-        $modelLower = Str::lower($model);
-        $modelPlural = Str::plural($modelLower);
-        
-        return $this->stubService->processStub(
-            $this->stubService->getStub('vue/route.stub'),
-            [
-                '{{ model }}' => $model,
-                '{{ modelLower }}' => $modelLower,
-                '{{ modelPlural }}' => $modelPlural
-            ]
-        );
-    }
 
     public function generateCommonComponents(): bool
     {
@@ -216,9 +228,8 @@ class VueGenerator
 
     private function getRouteName(): string
     {
-        $prefix = $this->modelData['routePrefix'] ?? 'api/v1';
         $modelPlural = Str::plural(Str::lower($this->modelData['model']));
-        return trim("{$prefix}/{$modelPlural}", '/');
+        return trim("{$modelPlural}");
     }
 
     private function getAxiosImport(): string
@@ -265,7 +276,7 @@ JS;
 HTML;
         }
         
-        error_log("Generated headers: " . print_r($headers, true));
+        # DEBUG: error_log("Generated headers: " . print_r($headers, true));
         return implode("\n", $headers);
     }
 
@@ -282,7 +293,7 @@ HTML;
 HTML;
         }
         
-        error_log("Generated body rows: " . print_r($rows, true));
+        # DEBUG: error_log("Generated body rows: " . print_r($rows, true));
         return implode("\n", $rows);
     }
 
@@ -297,7 +308,7 @@ HTML;
             $fields[] = $this->generateInputField($column);
         }
         
-        error_log("Generated input fields: " . print_r($fields, true));
+        # DEBUG: error_log("Generated input fields: " . print_r($fields, true));
         return implode("\n        ", $fields);
     }
 
@@ -311,28 +322,22 @@ HTML;
         foreach ($this->modelData['columns'] as $column) {
             $variables[] = "                {$column['name']}: null,";
         }
-        
-        error_log("Generated form variables: " . print_r($variables, true));
+
+        # DEBUG:  error_log("Generated form variables: " . print_r($variables, true));
         return implode("\n", $variables);
     }
 
     private function generateInputField(array $column): string
     {
-        $inputType = $this->getInputType($column['type']);
-        return <<<HTML
-        <div class="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
-            <div class="w-full sm:w-1/2">
-                <InputGroup 
-                    id="{$column['name']}" 
-                    :label="\$t('form.{$column['name']}')" 
-                    type="{$inputType}" 
-                    :placeholder="\$t('common.{$column['name']}')" 
-                    v-model="form.{$column['name']}">
-                </InputGroup>
-                <form-error :errors="validationErrors" field="{$column['name']}"></form-error>
-            </div>
-        </div>
-HTML;
+        $type = $this->getInputType($column['type']);
+        $mappedType = $this->inputTypeMap[$type] ?? 'string';
+        
+        $stubName = "vue/form/{$mappedType}.stub";
+        
+        $stub = $this->stubService->getStub($stubName);
+        return $this->stubService->processStub($stub, [
+            'name' => $column['name']
+        ]);
     }
 
     private function getInputType(string $columnType): string

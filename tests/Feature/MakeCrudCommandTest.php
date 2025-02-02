@@ -6,10 +6,12 @@ use Shahnewaz\RedprintNg\Tests\TestCase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Artisan;
 use Shahnewaz\RedprintNg\Commands\MakeCrudCommand;
+use Shahnewaz\RedprintNg\Services\StubService;
 
 class MakeCrudCommandTest extends TestCase
 {
     protected $testFilesPath;
+    protected $stubService;
 
     protected function setUp(): void
     {
@@ -38,6 +40,19 @@ class MakeCrudCommandTest extends TestCase
         file_put_contents($tempPath . '/package.json', $packageJson);
 
         $this->testFilesPath = $tempPath;
+
+        $this->stubService = new StubService();
+
+        // Create mock routes.ts file from stub
+        $routesStub = $this->stubService->getStub('vue/routes.stub');
+        $routesPath = $this->testFilesPath . '/resources/js/router/routes.ts';
+        
+        // Ensure the directory exists
+        if (!file_exists(dirname($routesPath))) {
+            mkdir(dirname($routesPath), recursive: true);
+        }
+        
+        File::put($routesPath, $routesStub);
     }
 
     public function test_it_can_generate_crud()
