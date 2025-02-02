@@ -57,7 +57,8 @@ class MakeCrudCommand extends Command
         'axios',
         'vue-router',
         'vue-i18n',
-        'lodash'
+        'lodash',
+        '@vueup/vue-quill'
     ];
 
     public function __construct($basePath = null)
@@ -159,21 +160,13 @@ class MakeCrudCommand extends Command
     private function generateLaravelFiles(LaravelGenerator $generator): void
     {
         $this->info('Generating Laravel files...');
-        $generator->generateMigration();
-        $generator->generateModel();
-        $generator->generateController();
-        $generator->generateResource();
-        $generator->updateRoutes();
+        $generator->generate();
     }
 
     private function generateVueFiles(VueGenerator $generator): void
     {
         $this->info('Generating Vue files...');
-        $generator->generateCommonComponents();
-        $generator->generateIndexComponent();
-        $generator->generateFormComponent();
-        $generator->generatePageComponent();
-        $generator->updateRouter();
+        $generator->generate();
     }
 
     private function promptForColumns()

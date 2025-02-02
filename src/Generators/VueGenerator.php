@@ -28,8 +28,11 @@ class VueGenerator
     public function generate()
     {
         $this->createDirectories();
-        $this->generateComponents();
-        $this->updateRoutes();
+        $this->generateCommonComponents();
+        $this->generateIndexComponent();
+        $this->generateFormComponent();
+        $this->generatePageComponent();
+        $this->updateRouter();
     }
 
     protected function createDirectories()
@@ -45,13 +48,6 @@ class VueGenerator
                 File::makeDirectory($dir, 0777, true);
             }
         }
-    }
-
-    protected function generateComponents()
-    {
-        $this->generateIndexComponent();
-        $this->generateFormComponent();
-        $this->generatePageComponent();
     }
 
     public function generateIndexComponent(): bool
@@ -111,26 +107,21 @@ class VueGenerator
         $stubName = $this->modelData['layout'] 
             ? 'vue/page-with-layout.stub'
             : 'vue/page.stub';
-            
-        $stub = File::get(__DIR__ . '/../stubs/' . $stubName);
         
         $replacements = [
-            '{{ modelName }}',
-            '{{ routePrefix }}'
-        ];
-        
-        $values = [
-            $this->modelData['model'],
-            $this->modelData['routePrefix']
+            'modelName' => $this->modelData['model'],
+            'routePrefix' => $this->modelData['routePrefix']
         ];
 
         // Add layout replacement if using layout
         if ($this->modelData['layout']) {
-            $replacements[] = '{{ layout }}';
-            $values[] = $this->modelData['layout'];
+            $replacements['layout'] = $this->modelData['layout'];
         }
 
-        $content = str_replace($replacements, $values, $stub);
+        $content = $this->stubService->processStub(
+            $this->stubService->getStub($stubName),
+            $replacements
+        );
 
         $path = $this->basePath . '/resources/js/pages/' . 
                 $this->modelData['model'] . '.vue';
@@ -142,19 +133,19 @@ class VueGenerator
     public function updateRouter(): bool
     {
         $routerPath = "{$this->basePath}/resources/js/router/routes.ts";
-        
+
         if (!file_exists($routerPath)) {
             $this->command->error("routes.ts not found at: {$routerPath}");
             return false;
         }
-        
+
         $routerContent = file_get_contents($routerPath);
-        
+
         // Find the appRoutes array
-        if (preg_match('/export\s+const\s+appRoutes\s*=\s*\[([\s\S]*?)\]/m', $routerContent, $matches)) {
+        if (preg_match('/export\s+const\s+appRoutes\s*=\s*\[([\s\S]*?)]/m', $routerContent, $matches)) {
             $existingRoutes = $matches[1];
             $newRoute = $this->getNewRouteConfig();
-            
+
             // Add new route before the catch-all route
             $updatedRoutes = rtrim($existingRoutes);
             if (strpos($updatedRoutes, 'path: \'/:pathMatch') !== false) {
@@ -168,16 +159,16 @@ class VueGenerator
                 // Append if no catch-all route found
                 $updatedRoutes .= ($updatedRoutes ? ',' : '') . $newRoute;
             }
-            
+
             $routerContent = str_replace(
                 $matches[0],
                 'export const appRoutes = [' . $updatedRoutes . ']',
                 $routerContent
             );
-            
+
             return $this->fileService->createFile($routerPath, $routerContent);
         }
-        
+
         $this->command->error("Could not find appRoutes array in routes.ts");
         return false;
     }
@@ -356,95 +347,5 @@ HTML;
             'password' => 'password',
             default => 'text',
         };
-    }
-
-    private function updateRoutes()
-    {
-        $routerFile = $this->basePath . '/resources/js/router/routes.ts';
-        if (!File::exists($routerFile)) {
-            File::put($routerFile, $this->getBaseRouterContent());
-        }
-
-        $content = File::get($routerFile);
-        $routeName = Str::plural(Str::snake($this->modelData['model']));
-        
-        // Add imports
-        $imports = $this->generateImports();
-        $lastImportPos = strrpos($content, "import") ?: 0;
-        $lastImportPos = strpos($content, "\n", $lastImportPos) + 1;
-        $content = substr_replace($content, $imports, $lastImportPos, 0);
-
-        // Add routes
-        $routes = $this->generateRoutes($routeName);
-        $lastBracketPos = strrpos($content, "]");
-        if ($lastBracketPos !== false) {
-            $content = substr_replace($content, $routes, $lastBracketPos - 1, 0);
-        }
-
-        File::put($routerFile, $content);
-    }
-
-    private function generateImports(): string
-    {
-        $model = $this->modelData['model'];
-        return "\nimport {$model}Page from '@/pages/{$model}.vue'
-import {$model}Index from '@/components/{$model}/Index.vue'
-import {$model}Form from '@/components/{$model}/Form.vue'\n";
-    }
-
-    private function generateRoutes(string $routeName): string
-    {
-        $model = $this->modelData['model'];
-        return "    {
-        path: '/{$routeName}',
-        name: 'pages.{$routeName}',
-        component: {$model}Page,
-        children: [
-            {
-                path: '',
-                name: 'pages.{$routeName}.index',
-                component: {$model}Index,
-                meta: {
-                    title: 'routes.titles.{$routeName}',
-                    description: 'routes.descriptions.{$routeName}',
-                    requiresAuth: true
-                },
-            },
-            {
-                path: 'edit/:id',
-                name: 'pages.{$routeName}.edit',
-                component: {$model}Form,
-                meta: {
-                    title: 'routes.titles.edit_{$model}',
-                    description: 'routes.descriptions.edit_{$model}',
-                    requiresAuth: true
-                },
-            },
-            {
-                path: 'new',
-                name: 'pages.{$routeName}.new',
-                component: {$model}Form,
-                meta: {
-                    title: 'routes.titles.new_{$model}',
-                    description: 'routes.descriptions.new_{$model}',
-                    requiresAuth: true
-                },
-            },
-        ],
-    },\n";
-    }
-
-    private function getBaseRouterContent(): string
-    {
-        return "import { createRouter, createWebHistory } from 'vue-router'
-
-const routes = [
-    // Routes will be added here
-]
-
-export default createRouter({
-    history: createWebHistory(),
-    routes
-})";
     }
 } 

@@ -41,7 +41,7 @@ class LaravelGenerator
     {
         $directories = [
             $this->basePath . '/app/Models',
-            $this->basePath . '/app/Http/Controllers/' . ($this->modelData['namespace'] ? $this->modelData['namespace'] : ''),
+            $this->basePath . '/app/Http/Controllers/' . ($this->modelData['namespace'] ?: ''),
             $this->basePath . '/app/Http/Resources',
             $this->basePath . '/database/migrations',
             $this->basePath . '/routes',
@@ -101,21 +101,22 @@ class LaravelGenerator
     public function generateController(): bool
     {
         $model = $this->modelData['model'];
-        $namespace = $this->modelData['namespace'] 
+        $namespaceString = $this->modelData['namespace']
             ? "\\{$this->modelData['namespace']}" 
             : '';
+        $namespace = $this->modelData['namespace'] ?: '';
         
         $content = $this->stubService->getStub('laravel/controller.stub');
         
         $content = $this->stubService->processStub($content, [
-            '{{ namespace }}' => "App\\Http\\Controllers{$namespace}",
+            '{{ namespace }}' => "App\\Http\\Controllers{$namespaceString}",
             '{{ modelName }}' => $model,
             '{{ columnAssignments }}' => $this->getColumnAssignments(),
             '{{ softDeleteMethods }}' => $this->modelData['softDeletes'] ? $this->getSoftDeleteMethods($model) : '',
         ]);
         
         return $this->fileService->createFile(
-            "{$this->basePath}/app/Http/Controllers/{$model}Controller.php",
+            "{$this->basePath}/app/Http/Controllers/$namespace/{$model}Controller.php",
             $content
         );
     }

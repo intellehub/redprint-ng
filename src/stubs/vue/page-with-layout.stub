@@ -1,5 +1,5 @@
 <template>
-    <{{layout}}>
+    <{{ layout }}>
         <div class="mx-auto">
             <router-view v-slot="{ Component, route }">
                 <component :is="Component" :key="route.path"/>
@@ -9,12 +9,12 @@
 </template>
 
 <script>
-import {{layout}} from "@/layouts/{{layout}}.vue";
+import {{ layout }} from "@/layouts/{{ layout }}.vue";
 
 export default {
-    name: '{{modelName}}Page',
+    name: '{{ modelName }}Page',
     components: {
-        {{layout}}
+        {{ layout }}
     }
 }
-</script> 
+</script>

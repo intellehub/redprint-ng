@@ -30,7 +30,8 @@ class MakeCrudCommandTest extends TestCase
                 "axios" => "^1.0.0",
                 "vue-router" => "^4.0.0",
                 "vue-i18n" => "^9.0.0",
-                "lodash" => "^4.17.21"
+                "lodash" => "^4.17.21",
+                "@vueup/vue-quill" => "^1.2.0"
             ]
         ], JSON_PRETTY_PRINT);
         
