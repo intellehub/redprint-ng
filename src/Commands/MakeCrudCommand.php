@@ -17,10 +17,11 @@ class MakeCrudCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'make:crud {model} 
+    protected $signature = 'redprint:crud {model} 
         {--namespace=App} 
-        {--route-prefix=} 
-        {--soft-deletes}';
+        {--route-prefix=api/v1}
+        {--layout=DefaultLayout}
+        {--soft-deletes=true}';
 
     /**
      * The console command description.
@@ -62,6 +63,10 @@ class MakeCrudCommand extends Command
     public function __construct($basePath = null)
     {
         parent::__construct();
+        $this->basePath = $basePath;
+        if ($basePath == null) {
+            $this->basePath = base_path();
+        }
         $this->output = new NullOutput();
     }
 
@@ -147,9 +152,9 @@ class MakeCrudCommand extends Command
             'model' => $this->argument('model'),
             'namespace' => $this->option('namespace'),
             'routePrefix' => $this->option('route-prefix') ?? config('redprint.route_prefix', 'api/v1'),
-            'softDeletes' => $this->option('soft-deletes'),
-            'layout' => $this->option('layout'),
-            'columns' => config('redprint.columns', []),
+            'softDeletes' => $this->option('soft-deletes') ?? true,
+            'layout' => $this->option('layout') ?? 'DefaultLayout',
+            'columns' => [],
             'basePath' => $this->basePath,
             'axios_instance' => config('redprint.axios_instance')
         ];
