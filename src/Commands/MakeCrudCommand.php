@@ -63,10 +63,7 @@ class MakeCrudCommand extends Command
     public function __construct($basePath = null)
     {
         parent::__construct();
-        $this->basePath = $basePath;
-        if ($basePath == null) {
-            $this->basePath = base_path();
-        }
+        $this->basePath = $basePath == null ? base_path() : $basePath;
         $this->output = new NullOutput();
     }
 
