@@ -17,7 +17,8 @@ class MakeCrudCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'redprint:crud {model} 
+    protected $signature = 'redprint:crud
+        {--model} 
         {--namespace=App} 
         {--route-prefix=api/v1}
         {--layout=DefaultLayout}
@@ -71,6 +72,10 @@ class MakeCrudCommand extends Command
     {
         try {
             $modelData = $this->getModelData();
+
+            if (empty($modelData['model'])) {
+                throw new \InvalidArgumentException('--model is a required parameter.');
+            }
 
             if (empty($modelData['columns'])) {
                 throw new \InvalidArgumentException('No columns defined in modelData');
@@ -146,12 +151,12 @@ class MakeCrudCommand extends Command
     public function getModelData(): array
     {
         return [
-            'model' => $this->argument('model'),
+            'model' => $this->option('model'),
             'namespace' => $this->option('namespace'),
             'routePrefix' => $this->option('route-prefix') ?? config('redprint.route_prefix', 'api/v1'),
             'softDeletes' => $this->option('soft-deletes') ?? true,
             'layout' => $this->option('layout') ?? 'DefaultLayout',
-            'columns' => [],
+            'columns' => $this->getColumns(),
             'basePath' => $this->basePath,
             'axios_instance' => config('redprint.axios_instance')
         ];
