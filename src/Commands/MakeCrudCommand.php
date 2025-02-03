@@ -21,8 +21,7 @@ class MakeCrudCommand extends Command
         {--model=} 
         {--namespace=App} 
         {--route-prefix=api/v1}
-        {--layout=DefaultLayout}
-        {--soft-deletes=true}';
+        {--layout=DefaultLayout}';
 
     /**
      * The console command description.
@@ -154,12 +153,18 @@ class MakeCrudCommand extends Command
             'model' => $this->option('model'),
             'namespace' => $this->option('namespace'),
             'routePrefix' => $this->option('route-prefix') ?? config('redprint.route_prefix', 'api/v1'),
-            'softDeletes' => $this->option('soft-deletes') ?? true,
+            'softDeletes' => $this->promptForSoftDeletes(),
             'layout' => $this->option('layout') ?? 'DefaultLayout',
             'columns' => $this->getColumns(),
             'basePath' => $this->basePath,
             'axios_instance' => config('redprint.axios_instance')
         ];
+    }
+
+    private function promptForSoftDeletes(): bool
+    {
+        $response = $this->ask('Do you want to enable soft deletes? (y/n) [y]', 'y');
+        return strtolower($response) === 'y';
     }
 
     private function generateLaravelFiles(LaravelGenerator $generator): void
