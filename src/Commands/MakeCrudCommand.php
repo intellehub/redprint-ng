@@ -138,7 +138,7 @@ class MakeCrudCommand extends Command
             'routes',
             'resources/js/components',
             'resources/js/components/Common',
-            "resources/js/components/{$this->argument('model')}",
+            "resources/js/components/{$this->option('model')}",
             'resources/js/pages',
         ];
 
@@ -161,10 +161,23 @@ class MakeCrudCommand extends Command
         ];
     }
 
+    private function askYesNo(string $question, string $default = 'y'): bool
+    {
+        do {
+            $response = strtolower($this->ask($question . ' (y/n) [' . $default . ']', $default));
+            
+            if (!in_array($response, ['y', 'n'])) {
+                $this->error('Invalid option. Please answer with y or n.');
+                continue;
+            }
+            
+            return $response === 'y';
+        } while (true);
+    }
+
     private function promptForSoftDeletes(): bool
     {
-        $response = $this->ask('Do you want to enable soft deletes? (y/n) [y]', 'y');
-        return strtolower($response) === 'y';
+        return $this->askYesNo('Do you want to enable soft deletes?');
     }
 
     private function generateLaravelFiles(LaravelGenerator $generator): void
@@ -200,7 +213,7 @@ class MakeCrudCommand extends Command
                 $enumValues = array_map('trim', explode(',', $enumValuesStr));
             }
 
-            $nullable = $this->confirm('Is Nullable?', false);
+            $nullable = $this->askYesNo('Is Nullable?', 'n');
             
             $default = $this->ask('Default value (press enter to skip)', null);
 
@@ -212,7 +225,7 @@ class MakeCrudCommand extends Command
                 'enumValues' => $enumValues
             ];
 
-            $addAnother = $this->confirm("\nDo you want to add another column?", true);
+            $addAnother = $this->askYesNo("\nDo you want to add another column?");
         } while ($addAnother);
 
         return $columns;
