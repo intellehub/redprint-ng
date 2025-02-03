@@ -176,12 +176,10 @@ class MakeCrudCommand extends Command
 
     private function promptForColumns()
     {
-        $columnCount = (int) $this->ask('How many columns do you want to add?');
         $columns = [];
-
-        for ($i = 0; $i < $columnCount; $i++) {
-            $this->info("\nColumn " . ($i + 1) . " details:");
-            
+        $this->info("\nPlease enter the first column name for the migration (id and timestamp columns are automatically added).");
+        
+        do {
             $name = $this->ask('Column Name');
             
             $type = $this->choice(
@@ -208,7 +206,9 @@ class MakeCrudCommand extends Command
                 'default' => $default,
                 'enumValues' => $enumValues
             ];
-        }
+
+            $addAnother = $this->confirm("\nDo you want to add another column?", true);
+        } while ($addAnother);
 
         return $columns;
     }
