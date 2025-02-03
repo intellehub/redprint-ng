@@ -18,7 +18,7 @@ class MakeCrudCommand extends Command
      * @var string
      */
     protected $signature = 'redprint:crud
-        {--model} 
+        {--model=} 
         {--namespace=App} 
         {--route-prefix=api/v1}
         {--layout=DefaultLayout}
@@ -105,7 +105,7 @@ class MakeCrudCommand extends Command
 
     private function validateRequirements(): void
     {
-        if (!$this->argument('model')) {
+        if (!$this->option('model')) {
             throw new \RuntimeException('Model name is required');
         }
 
