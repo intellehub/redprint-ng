@@ -107,7 +107,6 @@ class VueGenerator
         
         $routeName = $this->getRouteName();
         $axiosImport = $this->getAxiosImport();
-        $columns = $this->processColumnDefinitions();
         
         $content = $this->stubService->processStub($content, [
             '{{ modelName }}' => $model,
@@ -127,7 +126,7 @@ class VueGenerator
 
     public function updateRouter(): bool
     {
-        $routerPath = "{$this->basePath}/resources/js/router/routes.ts";
+        $routerPath = "{$this->basePath}/" . config('redprint.vue_router_location', 'resources/js/router/routes.ts');
 
         if (!file_exists($routerPath)) {
             $this->command->error("routes.ts not found at: {$routerPath}");
@@ -135,31 +134,44 @@ class VueGenerator
         }
 
         $routerContent = file_get_contents($routerPath);
-
-
         $model = $this->modelData['model'];
         $modelLower = Str::lower($model);
         $modelPlural = Str::plural($modelLower);
 
+        // Add imports at the top of the file with a new line before
+        $imports = [
+            "\n", // Add an empty line before new imports
+            "import {$model}Index from '@/pages/{$model}/{$model}Index.vue';",
+            "import {$model}Form from '@/pages/{$model}/{$model}Form.vue';"
+        ];
+        
+        $lastImportPosition = strrpos($routerContent, 'import');
+        $lastImportEndPosition = strpos($routerContent, "\n", $lastImportPosition);
+        $routerContent = substr_replace($routerContent, implode("\n", $imports), $lastImportEndPosition, 0);
+
         // Find the appRoutes array
-        if (preg_match('/export\s+const\s+appRoutes\s*=\s*\[([\s\S]*?)]/m', $routerContent, $matches)) {
+        if (preg_match('/export\s+const\s+appRoutes\s*=\s*\[([\s\S]*?)\n\s*\]/m', $routerContent, $matches)) {
             $existingRoutes = $matches[1];
             
             // Get and process the new route configuration
             $routeStub = $this->stubService->getStub('vue/route.stub');
-            $newRoute = $this->stubService->processStub($routeStub,[
+            $newRoute = $this->stubService->processStub($routeStub, [
                 '{{ routePath }}' => $this->getRouteName(),
                 '{{ modelName }}' => $model,
                 '{{ modelLower }}' => $modelLower,
                 '{{ modelPlural }}' => $modelPlural
             ]);
 
-            // Add new route after the catch-all route
-            $updatedRoutes = rtrim($existingRoutes) . ",\n" . trim($newRoute);
+            // Add new route as the last item in the array
+            $updatedRoutes = $existingRoutes;
+            if (trim($existingRoutes)) {
+                $updatedRoutes .= ",\n    ";
+            }
+            $updatedRoutes .= trim($newRoute);
 
             $routerContent = str_replace(
                 $matches[0],
-                'export const appRoutes = [' . $updatedRoutes . ']',
+                "export const appRoutes = [\n    " . $updatedRoutes . "\n]",
                 $routerContent
             );
 
@@ -270,7 +282,7 @@ HTML;
     private function getInputFields(): string
     {
         if (empty($this->modelData['columns'])) {
-            throw new \RuntimeException('No columns defined in modelData');
+            throw new \RuntimeException('No columns defined in model. Aborting...');
         }
 
         $fields = [];
@@ -285,7 +297,7 @@ HTML;
     private function getFormInputVariables(): string
     {
         if (empty($this->modelData['columns'])) {
-            throw new \RuntimeException('No columns defined in modelData');
+            throw new \RuntimeException('No columns defined in model. Aborting...');
         }
 
         $variables = [];
@@ -306,7 +318,7 @@ HTML;
         
         $stub = $this->stubService->getStub($stubName);
         return $this->stubService->processStub($stub, [
-            'name' => $column['name']
+            '{{ name }}' => $column['name']
         ]);
     }
 

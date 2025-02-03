@@ -105,10 +105,9 @@ class MakeCrudCommandTest extends TestCase
 
         // Run the command
         $exitCode = Artisan::call('redprint:crud', [
-            'model' => 'Post',
+            '--model' => 'Post',
             '--namespace' => 'Blog',
             '--route-prefix' => 'blog',
-            '--soft-deletes' => 'true',
             '--layout' => 'DefaultLayout'
         ]);
 

@@ -76,7 +76,7 @@ class TestCase extends BaseTestCase
     {
         // Set up any environment configuration
         $app['config']->set('redprint.axios_instance', 'axios');
-        $app['config']->set('redprint.vue_router_location', 'js/router/routes.ts');
+        $app['config']->set('redprint.vue_router_location', 'resources/js/router/routes.ts');
     }
 
     /**

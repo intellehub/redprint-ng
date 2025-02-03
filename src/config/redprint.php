@@ -19,9 +19,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | Specify the location of your Vue router configuration file.
-    | This should be relative to the resources directory.
-    | Example: 'js/router/routes.ts' or 'js/router.js'
+    | Example: 'resources/js/router/routes.ts' or 'js/routes.js'
     |
     */
-    'vue_router_location' => 'js/router/routes.ts',
+    'vue_router_location' => 'resources/js/router/routes.ts',
 ]; 
