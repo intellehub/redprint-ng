@@ -121,7 +121,7 @@ class MakeCrudCommandTest extends TestCase
         $this->assertFileExists($this->testFilesPath . '/app/Models/Post.php', 'Model file was not created');
         $this->assertFileExists($this->testFilesPath . '/app/Http/Controllers/Api/Backend/PostController.php', 'Controller file was not created');
         $this->assertFileExists($this->testFilesPath . '/app/Http/Resources/PostResource.php', 'Resource file was not created');
-        $this->assertFileExists($this->testFilesPath . '/resources/js/components/Backend/Post/Index.vue', 'Index component was not created');
-        $this->assertFileExists($this->testFilesPath . '/resources/js/components/Backend/Post/Form.vue', 'Form component was not created');
+        $this->assertFileExists($this->testFilesPath . '/resources/js/components/Backend/Post/PostIndex.vue', 'Index component was not created');
+        $this->assertFileExists($this->testFilesPath . '/resources/js/components/Backend/Post/PostForm.vue', 'Form component was not created');
     }
 } 
