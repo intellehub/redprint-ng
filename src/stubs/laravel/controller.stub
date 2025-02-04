@@ -21,8 +21,10 @@ class {{ modelName }}Controller extends Controller
         return new {{ modelName }}Resource($model);
     }
 
-    public function save(Request $request, $id = null)
+    public function save(Request $request)
     {
+        $id = $request->input('id') ?? null;
+        
         if ($id) {
             $model = {{ modelName }}::findOrFail($id);
         } else {
