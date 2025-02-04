@@ -68,24 +68,18 @@ return [
 
 ### Generate CRUD
 ```bash
-php artisan redprint:crud [options]
+php artisan redprint:crud
 ```
 
-#### Options:
-- `--model=` : The name of the model (Required)
-- `--namespace=` : The namespace for the controller (Optional)
-- `--route-prefix=` : The route prefix (Optional)
-- `--soft-deletes=` : Whether to include soft deletes (Optional, default: false)
-- `--layout=` : The layout component to wrap the page with (Optional)
+It will prompt you for the model name, namespace, route prefix, soft deletes, and layout.
 
 #### Example:
 ```bash
-php artisan redprint:crud --model=Product --namespace=API --route-prefix=v1 --soft-deletes=true --layout=DefaultLayout
-```
+php artisan redprint:crud```
 
 This will generate:
 - Model (`app/Models/Product.php`)
-- Controller (`app/Http/Controllers/API/ProductController.php`)
+- Controller (`app/Http/Controllers/Api/ProductController.php`)
 - Resource (`app/Http/Resources/ProductResource.php`)
 - Migration (`database/migrations/xxxx_xx_xx_create_products_table.php`)
 - Vue Components:
