@@ -148,10 +148,10 @@ class LaravelGenerator
             ? $this->modelData['routePrefix'].'/'.Str::lower($this->modelData['namespace'])
             : Str::lower($this->modelData['namespace']);
         $namespace = $this->modelData['namespace'] 
-            ? "\\{$this->modelData['namespace']}" 
+            ? "\\{$this->modelData['namespace']}"
             : '';
         
-        $routeContent = "\n\nuse App\\Http\\Controllers\\Api\\{$namespace}\\{$model}Controller;";
+        $routeContent = "\n\nuse App\\Http\\Controllers\\Api{$namespace}\\{$model}Controller;";
         $routeContent .= "\n\nRoute::prefix('{$routePrefix}')->middleware(['auth:api'])->group(function () {";
         $routeContent .= "\n    Route::get('" . Str::plural(Str::lower($model)) . "', [{$model}Controller::class, 'getIndex']);";
         $routeContent .= "\n    Route::get('" . Str::plural(Str::lower($model)) . "/{id}', [{$model}Controller::class, 'show']);";
