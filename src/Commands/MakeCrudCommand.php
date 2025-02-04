@@ -262,9 +262,7 @@ class MakeCrudCommand extends Command
             $type = $this->choice(
                 'Data Type (type to search, or select number)',
                 $this->supportedDataTypes,
-                'string',
-                null,
-                true
+                'string'
             );
 
             // Additional prompts for enum type
