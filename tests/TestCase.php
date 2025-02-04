@@ -29,9 +29,7 @@ class TestCase extends BaseTestCase
             $this->testFilesPath . '/app/Models',
             $this->testFilesPath . '/app/Http/Controllers',
             $this->testFilesPath . '/app/Http/Resources',
-            $this->testFilesPath . '/resources/js/pages',
             $this->testFilesPath . '/resources/js/components',
-            $this->testFilesPath . '/resources/js/layouts',
             $this->testFilesPath . '/resources/js/router',
             $this->testFilesPath . '/database/migrations',
         ];

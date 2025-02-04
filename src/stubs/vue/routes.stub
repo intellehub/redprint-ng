@@ -1,8 +1,10 @@
-import DefaultRouterView from '@/pages/DefaultRouterView.vue'
-import App from "@/layouts/App.vue";
 import NotFound from "@/pages/NotFound.vue";
+import Forbidden from "@/pages/Forbidden.vue";
+import App from "@/layouts/App.vue";
+import { AuthRoutes } from "@/router/AuthRoutes";
+import { AuthUserRoutes } from "@/router/AuthUserRoutes";
 
-export const appRoutes = [
+export const routes = [
     {
         path: '/:pathMatch(.*)*',
         name: 'not-found',
@@ -12,5 +14,25 @@ export const appRoutes = [
             description: 'routes.descriptions.not_found',
             requiresAuth: false
         }
-    }
-] 
+    },
+    {
+        path: '/403',
+        name: 'forbidden',
+        component: Forbidden,
+        meta: {
+            title: 'routes.titles.forbidden',
+            description: 'routes.descriptions.forbidden',
+            requiresAuth: false
+        }
+    },
+    {
+        path: '/app',
+        component: App,
+        meta: {
+            title: 'routes.titles.dashboard',
+            description: 'routes.descriptions.dashboard',
+            requiresAuth: true
+        }, children: AuthUserRoutes
+    },
+    AuthRoutes
+]

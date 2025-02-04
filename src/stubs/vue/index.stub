@@ -73,7 +73,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+{{ axiosImport }}
 import {_} from 'lodash'
 import Empty from "@/components/Common/Empty.vue"
 
@@ -93,7 +93,7 @@ export default {
     methods: {
         fetchItems() {
             this.loading = true
-            axios.get(`{{ routePath }}`, {
+            axios.get(`{{ namespaceLower }}/{{ routePath }}`, {
                 params: {
                     ...this.searchQuery,
                     page: this.currentPage
@@ -117,16 +117,16 @@ export default {
             this.fetchItems()
         },
         deleteItem(id) {
-            axios.delete(`{{ routePath }}/${id}`)
+            axios.delete(`{{ namespaceLower }}/{{ routePath }}/${id}`)
                 .then(() => {
                     this.fetchItems()
                 })
         },
         gotoNew() {
-            this.$router.push({ name: 'pages.{{ routeName }}.new' })
+            this.$router.push({ name: 'pages.{{ routeNamespace }}.{{ routeName }}.new' })
         },
         gotoEdit(item) {
-            this.$router.push({ name: 'pages.{{ routeName }}.edit', query: { id: item.id }})
+            this.$router.push({ name: 'pages.{{ routeNamespace }}.{{ routeName }}.edit', query: { id: item.id }})
         }
     },
     mounted() {

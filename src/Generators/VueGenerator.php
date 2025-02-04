@@ -62,8 +62,7 @@ class VueGenerator
     protected function createDirectories()
     {
         $directories = [
-            $this->basePath . '/resources/js/components/' . $this->modelData['model'],
-            $this->basePath . '/resources/js/pages',
+            $this->basePath . '/resources/js/components/' . $this->modelData['namespace'] . '/'. $this->modelData['model'],
             $this->basePath . '/resources/js/router',
         ];
 
@@ -74,114 +73,139 @@ class VueGenerator
         }
     }
 
-    public function generateIndexComponent(): bool
+    private function processVueStub(string $stubContent): string
     {
         $model = $this->modelData['model'];
-        $content = $this->stubService->getStub('vue/index.stub');
+        $namespace = $this->modelData['namespace'];
         
-        $routeName = $this->getRouteName();
-        $columns = $this->processColumnDefinitions();
-        $firstColumn = $columns[0]['name'] ?? 'id';
-        
-        $content = $this->stubService->processStub($content, [
+        // Common replacements used across multiple stubs
+        $replacements = [
+            // Model related
             '{{ modelName }}' => $model,
-            '{{ routeName }}' => $routeName,
-            '{{ routePath }}' => $routeName,
+            '{{ modelLower }}' => Str::lower($model),
+            '{{ modelPlural }}' => Str::plural(Str::lower($model)),
+            
+            // Namespace related
+            '{{ namespace }}' => $namespace,
+            '{{ namespaceLower }}' => Str::lower($namespace),
+            '{{ routeNamespace }}' => $this->getRoutNamespace(),
+            
+            // Route related
+            '{{ routeName }}' => $this->getRouteName(),
+            '{{ routePath }}' => $this->getRouteName(),
+            
+            // Axios related
             '{{ axiosImport }}' => $this->getAxiosImport(),
             '{{ axiosInstance }}' => $this->modelData['axios_instance'] ?? 'axiosInstance',
-            '{{ modelFirstColumn }}' => $firstColumn,
+            
+            // Table related
             '{{ tableHeaderItems }}' => $this->getTableHeaderItems(),
-            '{{ tableBodyItems }}' => $this->getTableBodyItems()
-        ]);
+            '{{ tableBodyItems }}' => $this->getTableBodyItems(),
+            '{{ modelFirstColumn }}' => $this->getFirstColumn(),
+            
+            // Form related
+            '{{ inputFields }}' => $this->getInputFields(),
+            '{{ formInputVariables }}' => $this->getFormInputVariables(),
+        ];
+
+        return $this->stubService->processStub($stubContent, $replacements);
+    }
+
+    // Helper method to get first column
+    private function getFirstColumn(): string
+    {
+        return $this->modelData['columns'][0]['name'] ?? 'id';
+    }
+
+    // Update the generate methods to use the new processVueStub
+    public function generateIndexComponent(): bool
+    {
+        $content = $this->stubService->getStub('vue/index.stub');
+        $processedContent = $this->processVueStub($content);
         
         return $this->fileService->createFile(
-            "{$this->basePath}/resources/js/components/{$model}/Index.vue",
-            $content
+            "{$this->basePath}/resources/js/components/{$this->modelData['namespace']}/{$this->modelData['model']}/Index.vue",
+            $processedContent
         );
     }
 
     public function generateFormComponent(): bool
     {
-        $model = $this->modelData['model'];
         $content = $this->stubService->getStub('vue/form.stub');
-        
-        $routeName = $this->getRouteName();
-        $axiosImport = $this->getAxiosImport();
-        
-        $content = $this->stubService->processStub($content, [
-            '{{ modelName }}' => $model,
-            '{{ routeName }}' => $routeName,
-            '{{ routePath }}' => $routeName,
-            '{{ axiosImport }}' => $axiosImport,
-            '{{ axiosInstance }}' => $this->modelData['axios_instance'] ?? 'axiosInstance',
-            '{{ inputFields }}' => $this->getInputFields(),
-            '{{ formInputVariables }}' => $this->getFormInputVariables()
-        ]);
+        $processedContent = $this->processVueStub($content);
         
         return $this->fileService->createFile(
-            "{$this->basePath}/resources/js/components/{$model}/Form.vue",
-            $content
+            "{$this->basePath}/resources/js/components/{$this->modelData['namespace']}/{$this->modelData['model']}/Form.vue",
+            $processedContent
         );
     }
 
     public function updateRouter(): bool
     {
-        $routerPath = "{$this->basePath}/" . config('redprint.vue_router_location', 'resources/js/router/routes.ts');
-
-        if (!file_exists($routerPath)) {
-            $this->command->error("routes.ts not found at: {$routerPath}");
+        $baseRoutePath = config('redprint.vue_router_location', 'resources/js/router/routes.ts');
+        $mainRouterPath = "{$this->basePath}/" . $baseRoutePath;
+        $routerDir = dirname($mainRouterPath);
+        
+        // Generate the new routes file
+        $routeStub = $this->stubService->getStub('vue/route.stub');
+        $newRoute = $this->processVueStub($routeStub);
+        
+        // Save the new routes file
+        $newRouterPath = "{$routerDir}/{$this->modelData['model']}Routes.ts";
+        if (!$this->fileService->createFile($newRouterPath, $newRoute)) {
             return false;
         }
 
-        $routerContent = file_get_contents($routerPath);
-        $model = $this->modelData['model'];
-        $modelLower = Str::lower($model);
-        $modelPlural = Str::plural($modelLower);
-
-        // Add imports at the top of the file with a new line before
-        $imports = [
-            "\n", // Add an empty line before new imports
-            "import {$model}Index from '@/pages/{$model}/{$model}Index.vue';",
-            "import {$model}Form from '@/pages/{$model}/{$model}Form.vue';"
-        ];
-        
-        $lastImportPosition = strrpos($routerContent, 'import');
-        $lastImportEndPosition = strpos($routerContent, "\n", $lastImportPosition);
-        $routerContent = substr_replace($routerContent, implode("\n", $imports), $lastImportEndPosition, 0);
-
-        // Find the appRoutes array
-        if (preg_match('/export\s+const\s+appRoutes\s*=\s*\[([\s\S]*?)\n\s*\]/m', $routerContent, $matches)) {
-            $existingRoutes = $matches[1];
-            
-            // Get and process the new route configuration
-            $routeStub = $this->stubService->getStub('vue/route.stub');
-            $newRoute = $this->stubService->processStub($routeStub, [
-                '{{ routePath }}' => $this->getRouteName(),
-                '{{ modelName }}' => $model,
-                '{{ modelLower }}' => $modelLower,
-                '{{ modelPlural }}' => $modelPlural
-            ]);
-
-            // Add new route as the last item in the array
-            $updatedRoutes = $existingRoutes;
-            if (trim($existingRoutes)) {
-                $updatedRoutes .= ",\n    ";
-            }
-            $updatedRoutes .= trim($newRoute);
-
-            $routerContent = str_replace(
-                $matches[0],
-                "export const appRoutes = [\n    " . $updatedRoutes . "\n]",
-                $routerContent
-            );
-
-            return $this->fileService->createFile($routerPath, $routerContent);
-        }
-
-        $this->command->error("Could not find appRoutes array in routes.ts");
-        return false;
+        // Update main routes.ts file
+        return $this->updateMainRouter($mainRouterPath);
     }
 
+    // Helper method to update main router file
+    private function updateMainRouter(string $mainRouterPath): bool
+    {
+        if (!file_exists($mainRouterPath)) {
+            $this->command->error("routes.ts not found at: {$mainRouterPath}");
+            return false;
+        }
+
+        $routerContent = file_get_contents($mainRouterPath);
+        $model = $this->modelData['model'];
+        
+        // Add import
+        $lastImportPos = strrpos($routerContent, 'import');
+        $insertImport = "\nimport { {$model}Routes } from \"@/router/{$model}Routes\";\n";
+        $routerContent = substr_replace($routerContent, $insertImport, $lastImportPos, 0);
+
+        // Add route
+        $routesArrayEnd = strrpos($routerContent, ']');
+        if ($routesArrayEnd === false) {
+            $this->command->error("Could not find routes array in routes.ts");
+            return false;
+        }
+
+        // Get content up to the closing bracket
+        $beforeClosing = substr($routerContent, 0, $routesArrayEnd);
+        
+        // Find the last actual route entry
+        if (preg_match('/\s+(\w+Routes)\s*$/', $beforeClosing, $matches)) {
+            $lastRoute = $matches[1];
+            $lastRoutePos = strrpos($beforeClosing, $lastRoute);
+            
+            // Replace the last route with the same route plus a comma
+            $routerContent = substr_replace(
+                $routerContent,
+                $lastRoute . ',',
+                $lastRoutePos,
+                strlen($lastRoute)
+            );
+        }
+        
+        // Add our new route
+        $newRouteEntry = "\n    {$model}Routes\n";
+        $routerContent = substr_replace($routerContent, $newRouteEntry, $routesArrayEnd, 0);
+
+        return $this->fileService->createFile($mainRouterPath, $routerContent);
+    }
 
     public function generateCommonComponents(): bool
     {
@@ -212,6 +236,11 @@ class VueGenerator
     {
         $modelPlural = Str::plural(Str::lower($this->modelData['model']));
         return trim("{$modelPlural}");
+    }
+
+    private function getRoutNamespace(): string
+    {
+        return Str::lower($this->modelData['namespace']);
     }
 
     private function getAxiosImport(): string
@@ -301,8 +330,14 @@ HTML;
         }
 
         $variables = [];
+        $i = 0;
         foreach ($this->modelData['columns'] as $column) {
-            $variables[] = "                {$column['name']}: null,";
+            if ($i == 0) {
+                $variables[] = "{$column['name']}: null,";
+            } else {
+                $variables[] = "        {$column['name']}: null,";
+            }
+            $i = $i + 1;
         }
 
         # DEBUG:  error_log("Generated form variables: " . print_r($variables, true));
@@ -312,7 +347,9 @@ HTML;
     private function generateInputField(array $column): string
     {
         $type = $this->getInputType($column['type']);
-        $mappedType = $this->inputTypeMap[$type] ?? 'string';
+        $mappedType = match($type) {
+            default => $type
+        };
         
         $stubName = "vue/form/{$mappedType}.stub";
         
@@ -325,14 +362,17 @@ HTML;
     private function getInputType(string $columnType): string
     {
         return match($columnType) {
-            'text' => 'textarea',
-            'boolean' => 'checkbox',
-            'date' => 'date',
-            'datetime' => 'datetime-local',
-            'time' => 'time',
-            'email' => 'email',
-            'password' => 'password',
-            default => 'text',
+            'text', 'longText', 'mediumText' => 'text',
+            'boolean' => 'boolean',
+            'date' => 'datetime',
+            'datetime' => 'datetime',
+            'timestamp' => 'datetime',
+            'time' => 'datetime',
+            'email' => 'string',
+            'password' => 'string',
+            'integer', 'bigInt', 'float', 'decimal' => 'number',
+            'string' => 'string',
+            default => 'string',
         };
     }
 } 

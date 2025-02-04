@@ -1,13 +1,19 @@
-{
+import DefaultRouterView from "@/components/Common/DefaultRouterView.vue";
+import {{ modelName }}Index from '@/components/{{ namespace }}/{{ modelName }}/{{ modelName }}Index.vue';
+import {{ modelName }}Form from '@/components/{{ namespace }}/{{ modelName }}/{{ modelName }}Form.vue';
+
+export const {{ modelName }}Routes = {
   path: '/{{ routePath }}',
-  name: 'pages.{{ routePath }}',
+  name: 'pages.{{ routeNamespace }}.{{ routePath }}',
   component: DefaultRouterView,
   children: [
     {
       path: '',
-      name: 'pages.{{ routePath }}.index',
+      name: 'pages.{{ routeNamespace }}.{{ routePath }}.index',
       component: {{ modelName }}Index,
       meta: {
+        roles: [],
+        permissions: [],
         title: 'routes.titles.{{ routePath }}',
         description: 'routes.descriptions.{{ routePath }}',
         requiresAuth: true
@@ -15,9 +21,12 @@
     },
     {
       path: 'edit/:id',
-      name: 'pages.{{ routePath }}.edit',
+      name: 'pages.{{ routeNamespace }}.{{ routePath }}.edit',
       component: {{ modelName }}Form,
       meta: {
+        roles: [],
+        permissions: [],
+        parent: 'pages.{{ routeNamespace }}.{{ routePath }}.index',
         title: 'routes.titles.edit_{{ modelLower }}',
         description: 'routes.descriptions.edit_{{ modelLower }}',
         requiresAuth: true
@@ -25,9 +34,12 @@
     },
     {
       path: 'new',
-      name: 'pages.{{ routePath }}.new',
+      name: 'pages.{{ routeNamespace }}.{{ routePath }}.new',
       component: {{ modelName }}Form,
       meta: {
+        roles: [],
+        permissions: [],
+        parent: 'pages.{{ routeNamespace }}.{{ routePath }}.index',
         title: 'routes.titles.new_{{ modelLower }}',
         description: 'routes.descriptions.new_{{ modelLower }}',
         requiresAuth: true

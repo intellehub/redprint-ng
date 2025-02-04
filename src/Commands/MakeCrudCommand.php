@@ -17,11 +17,7 @@ class MakeCrudCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'redprint:crud
-        {--model=} 
-        {--namespace=App} 
-        {--route-prefix=api/v1}
-        {--layout=DefaultLayout}';
+    protected $signature = 'redprint:crud';
 
     /**
      * The console command description.
@@ -73,7 +69,7 @@ class MakeCrudCommand extends Command
             $modelData = $this->getModelData();
 
             if (empty($modelData['model'])) {
-                throw new \InvalidArgumentException('--model is a required parameter.');
+                throw new \InvalidArgumentException('Model name is required.');
             }
 
             if (empty($modelData['columns'])) {
@@ -104,10 +100,6 @@ class MakeCrudCommand extends Command
 
     private function validateRequirements(): void
     {
-        if (!$this->option('model')) {
-            throw new \RuntimeException('Model name is required');
-        }
-
         $this->validatePackageJson();
     }
 
@@ -138,8 +130,6 @@ class MakeCrudCommand extends Command
             'routes',
             'resources/js/components',
             'resources/js/components/Common',
-            "resources/js/components/{$this->option('model')}",
-            'resources/js/pages',
         ];
 
         foreach ($directories as $directory) {
@@ -149,19 +139,71 @@ class MakeCrudCommand extends Command
 
     public function getModelData(): array
     {
+        // Get model name with validation
+        do {
+            $model = $this->ask('Please specify the Model name (Should be singular and title case)');
+            
+            if (empty($model)) {
+                $this->error('Model name cannot be empty.');
+                continue;
+            }
+            
+            if (!preg_match('/^[A-Z][a-zA-Z]*$/', $model)) {
+                $this->error('Model name must start with a capital letter and contain only letters.');
+                continue;
+            }
+            
+            break;
+        } while (true);
+        
+        $this->info('Model name: ' . $model);
+
+        // Get namespace with validation
+        do {
+            $namespace = $this->ask('Please specify namespace.');
+            
+            if (empty($namespace)) {
+                $this->error('Namespace cannot be empty.');
+                continue;
+            }
+            
+            if (strtolower($namespace) === 'api') {
+                $this->error('Namespace must not be "Api".');
+                continue;
+            }
+            
+            if (!preg_match('/^[A-Z][a-zA-Z]*$/', $namespace)) {
+                $this->error('Namespace must start with a capital letter and contain only letters.');
+                continue;
+            }
+            
+            $namespace = trim($namespace, '\\');
+            break;
+        } while (true);
+
+        $this->info('Namespace: ' . $namespace);
+
+        // Get route prefix
+        $routePrefix = $this->ask('Please specify route prefix. Defaults to: v1', 'v1');
+        $this->info('Route prefix: ' . $routePrefix);
+
+        // Get layout
+        $layout = $this->ask('Please specify the Vue component layout. Defaults to: DefaultLayout', 'DefaultLayout');
+        $this->info('Layout: ' . $layout);
+
         return [
-            'model' => $this->option('model'),
-            'namespace' => $this->option('namespace'),
-            'routePrefix' => $this->option('route-prefix') ?? config('redprint.route_prefix', 'api/v1'),
+            'model' => $model,
+            'namespace' => $namespace,
+            'routePrefix' => $routePrefix,
+            'layout' => $layout,
             'softDeletes' => $this->promptForSoftDeletes(),
-            'layout' => $this->option('layout') ?? 'DefaultLayout',
             'columns' => $this->getColumns(),
             'basePath' => $this->basePath,
             'axios_instance' => config('redprint.axios_instance')
         ];
     }
 
-    private function askYesNo(string $question, string $default = 'y'): bool
+    public function askYesNo(string $question, string $default = 'y'): bool
     {
         do {
             $response = strtolower($this->ask($question . ' (y/n) [' . $default . ']', $default));
@@ -170,7 +212,7 @@ class MakeCrudCommand extends Command
                 $this->error('Invalid option. Please answer with y or n.');
                 continue;
             }
-            
+            $this->info('You selected: ' . $response);
             return $response === 'y';
         } while (true);
     }
@@ -198,12 +240,31 @@ class MakeCrudCommand extends Command
         $this->info("\nPlease enter the first column name for the migration (id and timestamp columns are automatically added).");
         
         do {
-            $name = $this->ask('Column Name');
+            // Column name with validation
+            do {
+                $name = $this->ask('Column Name (lowercase letters only)');
+                
+                if (empty($name)) {
+                    $this->error('Column name cannot be empty.');
+                    continue;
+                }
+                
+                if (!preg_match('/^[a-z]+$/', $name)) {
+                    $this->error('Column name must contain only lowercase letters.');
+                    continue;
+                }
+                
+                break;
+            } while (true);
+            
+            $this->info('Column name: ' . $name);
             
             $type = $this->choice(
-                'Data Type',
+                'Data Type (type to search, or select number)',
                 $this->supportedDataTypes,
-                0
+                'string',
+                null,
+                true
             );
 
             // Additional prompts for enum type

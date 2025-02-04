@@ -84,8 +84,8 @@ class MakeCrudCommandTest extends TestCase
         // Create model data with all required fields
         $modelData = [
             'model' => 'Post',
-            'namespace' => 'Blog',
-            'routePrefix' => 'blog',
+            'namespace' => 'Backend',
+            'routePrefix' => 'v1',
             'softDeletes' => true,
             'layout' => 'DefaultLayout',
             'columns' => $columns,
@@ -95,21 +95,21 @@ class MakeCrudCommandTest extends TestCase
         // Create a mock of the command that will return our model data
         $command = $this->getMockBuilder(MakeCrudCommand::class)
             ->onlyMethods(['getModelData'])
+            ->setConstructorArgs([$this->testFilesPath])
             ->getMock();
         
-        $command->method('getModelData')
+        // Set the modelData property
+        $command->modelData = $modelData;
+        
+        $command->expects($this->once())
+            ->method('getModelData')
             ->willReturn($modelData);
 
         // Bind the mock to the container
         $this->app->instance(MakeCrudCommand::class, $command);
 
         // Run the command
-        $exitCode = Artisan::call('redprint:crud', [
-            '--model' => 'Post',
-            '--namespace' => 'Blog',
-            '--route-prefix' => 'blog',
-            '--layout' => 'DefaultLayout'
-        ]);
+        $exitCode = Artisan::call('redprint:crud');
 
         // Get the output for debugging
         $output = Artisan::output();
@@ -119,9 +119,9 @@ class MakeCrudCommandTest extends TestCase
 
         // Assert files were created
         $this->assertFileExists($this->testFilesPath . '/app/Models/Post.php', 'Model file was not created');
-        $this->assertFileExists($this->testFilesPath . '/app/Http/Controllers/Blog/PostController.php', 'Controller file was not created');
+        $this->assertFileExists($this->testFilesPath . '/app/Http/Controllers/Api/Backend/PostController.php', 'Controller file was not created');
         $this->assertFileExists($this->testFilesPath . '/app/Http/Resources/PostResource.php', 'Resource file was not created');
-        $this->assertFileExists($this->testFilesPath . '/resources/js/components/Post/Index.vue', 'Index component was not created');
-        $this->assertFileExists($this->testFilesPath . '/resources/js/components/Post/Form.vue', 'Form component was not created');
+        $this->assertFileExists($this->testFilesPath . '/resources/js/components/Backend/Post/Index.vue', 'Index component was not created');
+        $this->assertFileExists($this->testFilesPath . '/resources/js/components/Backend/Post/Form.vue', 'Form component was not created');
     }
 } 

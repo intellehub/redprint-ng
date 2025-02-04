@@ -53,7 +53,7 @@ export default {
       var self = this
       if (!this.id) return
       this.loading = true
-      {{ axiosInstance }}.get(`{{ routePath }}/${this.id}`).then((response) => {
+      {{ axiosInstance }}.get(`{{ namespaceLower }}/{{ routePath }}/${this.id}`).then((response) => {
         this.form = response.data.data
         this.isEditing = true
         this.loading = false
@@ -69,10 +69,10 @@ export default {
         payload.id = this.id
       }
 
-      {{ axiosInstance }}.post(`{{ routePath }}/save`, payload).then(() => {
+      {{ axiosInstance }}.post(`{{ namespaceLower }}/{{ routePath }}/save`, payload).then(() => {
         self.loading = false
         self.$message({type: 'success', message: self.$t('messages.save_success')})
-        self.$router.push({ name: 'pages.{{ routeName }}.index' })
+        self.$router.push({ name: 'pages.{{ routeNamespace }}.{{ routeName }}.index' })
       }).catch((e) => {
         self.$message({type: 'error', message: self.$t('messages.save_error')})
         self.loading = false
@@ -82,7 +82,7 @@ export default {
       })
     },
     cancel() {
-      this.$router.push({ name: 'pages.{{ routeName }}.index' })
+      this.$router.push({ name: 'pages.{{ routeNamespace }}.{{ routeName }}.index' })
     },
   },
   mounted() {

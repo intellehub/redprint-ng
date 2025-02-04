@@ -3,9 +3,10 @@
 namespace {{ namespace }};
 
 use Illuminate\Database\Eloquent\Model;
-{{ useSoftDeletes }}
+{{ importSoftDeletes }}
 
 class {{ modelName }} extends Model
 {
+    {{ useSoftDeletes }}
     protected $guarded = ['id'];
 }

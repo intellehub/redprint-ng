@@ -41,7 +41,7 @@ class LaravelGenerator
     {
         $directories = [
             $this->basePath . '/app/Models',
-            $this->basePath . '/app/Http/Controllers/' . ($this->modelData['namespace'] ?: ''),
+            $this->basePath . '/app/Http/Controllers/Api/' . ($this->modelData['namespace'] ?: ''),
             $this->basePath . '/app/Http/Resources',
             $this->basePath . '/database/migrations',
             $this->basePath . '/routes',
@@ -88,7 +88,10 @@ class LaravelGenerator
             '{{ modelName }}' => $model,
             '{{ fillable }}' => $fillable,
             '{{ useSoftDeletes }}' => $this->modelData['softDeletes'] 
-                ? "use Illuminate\\Database\\Eloquent\\SoftDeletes;\n\n    use SoftDeletes;" 
+                ?"use SoftDeletes;" 
+                : '',
+            '{{ importSoftDeletes }}' => $this->modelData['softDeletes'] 
+                ? "use Illuminate\\Database\\Eloquent\\SoftDeletes;" 
                 : '',
         ]);
         
@@ -116,7 +119,7 @@ class LaravelGenerator
         ]);
         
         return $this->fileService->createFile(
-            "{$this->basePath}/app/Http/Controllers/$namespace/{$model}Controller.php",
+            "{$this->basePath}/app/Http/Controllers/Api/$namespace/{$model}Controller.php",
             $content
         );
     }
@@ -142,13 +145,13 @@ class LaravelGenerator
     {
         $model = $this->modelData['model'];
         $routePrefix = $this->modelData['routePrefix'] 
-            ? "'{$this->modelData['routePrefix']}'" 
-            : "''";
+            ? $this->modelData['routePrefix'].'/'.Str::lower($this->modelData['namespace'])
+            : Str::lower($this->modelData['namespace']);
         $namespace = $this->modelData['namespace'] 
             ? "\\{$this->modelData['namespace']}" 
             : '';
         
-        $routeContent = "\n\nuse App\\Http\\Controllers{$namespace}\\{$model}Controller;";
+        $routeContent = "\n\nuse App\\Http\\Controllers\\Api\\{$namespace}\\{$model}Controller;";
         $routeContent .= "\n\nRoute::prefix({$routePrefix})->middleware(['auth:api'])->group(function () {";
         $routeContent .= "\n    Route::get('" . Str::plural(Str::lower($model)) . "', [{$model}Controller::class, 'getIndex']);";
         $routeContent .= "\n    Route::get('" . Str::plural(Str::lower($model)) . "/{id}', [{$model}Controller::class, 'show']);";
@@ -217,7 +220,7 @@ class LaravelGenerator
     private function getResourceColumns(): string
     {
         $columns = [
-            "            'id' => \$this->id,"
+            "'id' => \$this->id,"
         ];
         
         foreach ($this->modelData['columns'] as $column) {
