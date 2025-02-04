@@ -112,7 +112,7 @@ class LaravelGenerator
         $content = $this->stubService->getStub('laravel/controller.stub');
         
         $content = $this->stubService->processStub($content, [
-            '{{ namespace }}' => "App\\Http\\Controllers{$namespaceString}",
+            '{{ namespace }}' => "App\\Http\\Controllers\Api\{$namespaceString}",
             '{{ modelName }}' => $model,
             '{{ columnAssignments }}' => $this->getColumnAssignments(),
             '{{ softDeleteMethods }}' => $this->modelData['softDeletes'] ? $this->getSoftDeleteMethods($model) : '',

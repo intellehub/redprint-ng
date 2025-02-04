@@ -124,7 +124,7 @@ class VueGenerator
         $processedContent = $this->processVueStub($content);
         
         return $this->fileService->createFile(
-            "{$this->basePath}/resources/js/components/{$this->modelData['namespace']}/{$this->modelData['model']}/Index.vue",
+            "{$this->basePath}/resources/js/components/{$this->modelData['namespace']}/{$this->modelData['model']}/{$this->modelData['model']}Index.vue",
             $processedContent
         );
     }
@@ -135,7 +135,7 @@ class VueGenerator
         $processedContent = $this->processVueStub($content);
         
         return $this->fileService->createFile(
-            "{$this->basePath}/resources/js/components/{$this->modelData['namespace']}/{$this->modelData['model']}/Form.vue",
+            "{$this->basePath}/resources/js/components/{$this->modelData['namespace']}/{$this->modelData['model']}/{$this->modelData['model']}Form.vue",
             $processedContent
         );
     }
