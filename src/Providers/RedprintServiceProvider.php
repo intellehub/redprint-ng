@@ -16,23 +16,25 @@ class RedprintServiceProvider extends ServiceProvider
     public function boot()
     {
         if ($this->app->runningInConsole()) {
-            $this->commands($this->commands);
-
+            // Publish config
             $this->publishes([
                 __DIR__ . '/../config/redprint.php' => config_path('redprint.php'),
             ], 'config');
+
+            // Register commands
+            $this->commands($this->commands);
         }
     }
 
     public function register()
     {
+        // First merge the configs
+        $configPath = __DIR__ . '/../config/redprint.php';
+        $this->mergeConfigFrom($configPath, 'redprint');
+
+        // Then register commands
         $this->app->singleton(MakeCrudCommand::class, function ($app) {
             return new MakeCrudCommand();
         });
-
-        $this->commands($this->commands);
-
-        $configPath = __DIR__ . '/../config/redprint.php';
-        $this->mergeConfigFrom($configPath, 'redprint');
     }
 }

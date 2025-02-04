@@ -89,7 +89,8 @@ class MakeCrudCommandTest extends TestCase
             'softDeletes' => true,
             'layout' => 'DefaultLayout',
             'columns' => $columns,
-            'basePath' => $this->testFilesPath
+            'basePath' => $this->testFilesPath,
+            'axios_instance' => config('redprint.axios_instance') ?? null
         ];
 
         // Create a mock of the command that will return our model data
