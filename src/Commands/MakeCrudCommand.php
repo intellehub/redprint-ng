@@ -242,15 +242,15 @@ class MakeCrudCommand extends Command
         do {
             // Column name with validation
             do {
-                $name = $this->ask('Column Name (lowercase letters only)');
+                $name = $this->ask('Column Name (lowercase letters and underscore only)');
                 
                 if (empty($name)) {
                     $this->error('Column name cannot be empty.');
                     continue;
                 }
                 
-                if (!preg_match('/^[a-z]+$/', $name)) {
-                    $this->error('Column name must contain only lowercase letters.');
+                if (!preg_match('/^[a-z_]+$/', $name)) {
+                    $this->error('Column name must contain only lowercase letters and underscores.');
                     continue;
                 }
                 
