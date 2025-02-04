@@ -93,7 +93,7 @@ export default {
     methods: {
         fetchItems() {
             this.loading = true
-            axios.get(`{{ namespaceLower }}/{{ routePath }}`, {
+            {{ axiosInstance }}.get(`{{ namespaceLower }}/{{ routePath }}`, {
                 params: {
                     ...this.searchQuery,
                     page: this.currentPage
@@ -117,7 +117,7 @@ export default {
             this.fetchItems()
         },
         deleteItem(id) {
-            axios.delete(`{{ namespaceLower }}/{{ routePath }}/${id}`)
+            {{ axiosInstance }}.delete(`{{ namespaceLower }}/{{ routePath }}/${id}`)
                 .then(() => {
                     this.fetchItems()
                 })
