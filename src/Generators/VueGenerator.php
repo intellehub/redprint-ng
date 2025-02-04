@@ -361,18 +361,6 @@ HTML;
 
     private function getInputType(string $columnType): string
     {
-        return match($columnType) {
-            'text', 'longText', 'mediumText' => 'text',
-            'boolean' => 'boolean',
-            'date' => 'datetime',
-            'datetime' => 'datetime',
-            'timestamp' => 'datetime',
-            'time' => 'datetime',
-            'email' => 'string',
-            'password' => 'string',
-            'integer', 'bigInt', 'float', 'decimal' => 'number',
-            'string' => 'string',
-            default => 'string',
-        };
+        return $this->inputTypeMap[strtolower($columnType)] ?? 'string';
     }
 } 
