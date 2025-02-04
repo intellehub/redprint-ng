@@ -1,6 +1,10 @@
 # Redprint - Laravel CRUD Generator with Vue.js
 
-A Laravel package for generating CRUD operations with Vue.js frontend integration. Supports Element Plus, Tailwind CSS, and customizable layouts.
+A Laravel package for generating CRUD operations with Vue.js frontend integration.
+
+**NOTE:** Redprint is **extremely** opinionated about how you should structure your Laravel + Vue 3 project. It is designed to be used with Laravel 11+ and Vue 3+ using Element Plus and Tailwind CSS.
+
+This package is still in development and may not be fully stable.
 
 ## Installation
 
