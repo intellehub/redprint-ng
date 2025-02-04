@@ -20,7 +20,7 @@ export const {{ modelName }}Routes = {
       }
     },
     {
-      path: 'edit/:id',
+      path: 'edit',
       name: 'pages.{{ routeNamespace }}.{{ routePath }}.edit',
       component: {{ modelName }}Form,
       meta: {
