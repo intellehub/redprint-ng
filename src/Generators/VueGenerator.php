@@ -106,6 +106,10 @@ class VueGenerator
             // Form related
             '{{ inputFields }}' => $this->getInputFields(),
             '{{ formInputVariables }}' => $this->getFormInputVariables(),
+            
+            // Relationship related (always include with empty default)
+            '{{ relationshipDataVariables }}' => $this->getRelationshipDataVariables(),
+            '{{ relationshipDataFetchers }}' => $this->generateRelationshipDataFetchers(),
         ];
 
         return $this->stubService->processStub($stubContent, $replacements);
@@ -346,6 +350,17 @@ HTML;
 
     private function generateInputField(array $column): string
     {
+        if (!empty($column['relationshipData'])) {
+            // Use select stub for relationship fields
+            $stub = $this->stubService->getStub('vue/form/select.stub');
+            return $this->stubService->processStub($stub, [
+                '{{ relatedModelLower }}' => $column['relationshipData']['relatedModelLower'],
+                '{{ relatedColumn }}' => $column['name'],
+                '{{ relatedModeLabelColumn }}' => $column['relationshipData']['labelColumn'],
+                '{{ relatedApiEndpoint }}' => $column['relationshipData']['endpoint']
+            ]);
+        }
+
         $type = $this->getInputType($column['type']);
         $mappedType = match($type) {
             default => $type
@@ -357,6 +372,34 @@ HTML;
         return $this->stubService->processStub($stub, [
             '{{ name }}' => $column['name']
         ]);
+    }
+
+    private function getRelationshipDataVariables(): string
+    {
+        $variables = [];
+        foreach ($this->modelData['columns'] as $column) {
+            if (!empty($column['relationshipData'])) {
+                $relatedModelLower = $column['relationshipData']['relatedModelLower'];
+                $variables[] = "{$relatedModelLower}Data: [],";
+            }
+        }
+        return !empty($variables) ? implode("\n            ", $variables) : '';
+    }
+
+    private function generateRelationshipDataFetchers(): string
+    {
+        $fetchers = [];
+        foreach ($this->modelData['columns'] as $column) {
+            if (!empty($column['relationshipData'])) {
+                $stub = $this->stubService->getStub('vue/fetchData.stub');
+                $fetchers[] = $this->stubService->processStub($stub, [
+                    '{{ axiosInstance }}' => $this->modelData['axios_instance'] ?? 'axiosInstance',
+                    '{{ relatedModelLower }}' => $column['relationshipData']['relatedModelLower'],
+                    '{{ relatedApiEndpoint }}' => $column['relationshipData']['endpoint']
+                ]);
+            }
+        }
+        return !empty($fetchers) ? implode("\n        ", $fetchers) : '';
     }
 
     private function getInputType(string $columnType): string

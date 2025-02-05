@@ -154,6 +154,7 @@ class LaravelGenerator
         $routeContent = "\n\nuse App\\Http\\Controllers\\Api{$namespace}\\{$model}Controller;";
         $routeContent .= "\n\nRoute::prefix('{$routePrefix}')->middleware(['auth:api'])->group(function () {";
         $routeContent .= "\n    Route::get('" . Str::plural(Str::lower($model)) . "', [{$model}Controller::class, 'getIndex']);";
+        $routeContent .= "\n    Route::get('" . Str::plural(Str::lower($model)) . "/list', [{$model}Controller::class, 'listAll']);";
         $routeContent .= "\n    Route::get('" . Str::plural(Str::lower($model)) . "/{id}', [{$model}Controller::class, 'show']);";
         $routeContent .= "\n    Route::post('" . Str::plural(Str::lower($model)) . "/save', [{$model}Controller::class, 'save']);";
         $routeContent .= "\n    Route::delete('" . Str::plural(Str::lower($model)) . "/{id}', [{$model}Controller::class, 'delete']);";

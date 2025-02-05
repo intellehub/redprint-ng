@@ -1,0 +1,18 @@
+<div class="mb-5.5">
+    <label class="mb-3 block text-sm font-medium text-black dark:text-white">{{ $t('common.{{ relatedModelLower }}') }}</label>
+    <el-select
+        v-model="formData.{{ relatedColumn }}"
+        multiple
+        size="large"
+        class="w-full font-normal text-black focus:border-primary focus-visible:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+        :placeholder="$t('common.{{ relatedModelLower }}')"
+    >
+        <el-option
+            v-for="item in {{ relatedModelLower }}Data"
+            :key="item.id"
+            :label="item.{{ relatedModeLabelColumn }}"
+            :value="item.id"
+        />
+    </el-select>
+    <form-error :errors="validationErrors" field="{{ relatedModelLower }}"></form-error>
+</div>

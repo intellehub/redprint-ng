@@ -45,7 +45,8 @@ export default {
       loading: false,
       mainError: null,
       validationErrors: [],
-      isEditing: false
+      isEditing: false,
+      {{ relationshipDataVariables }}
     }
   },
   methods: {
@@ -62,9 +63,10 @@ export default {
         // console.log(error)
       })
     },
-    async save() {
+    save() {
       var self = this
       const payload = { ...this.form }
+      
       if (this.isEditing) {
         payload.id = this.id
       }
@@ -90,6 +92,8 @@ export default {
       this.id = this.$route.query.id
       this.fetchItem()
     }
+    // Fetch relationship data
+    {{ relationshipDataFetchers }}
   },
   components: {
     InputGroup,

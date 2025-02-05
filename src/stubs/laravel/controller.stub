@@ -15,6 +15,12 @@ class {{ modelName }}Controller extends Controller
         return {{ modelName }}Resource::collection($models);
     }
 
+    public function listAll()
+    {
+        $models = {{ modelName }}::get();
+        return {{ modelName }}Resource::collection($models);
+    }
+
     public function show($id)
     {
         $model = {{ modelName }}::findOrFail($id);

@@ -9,6 +9,7 @@ use Shahnewaz\RedprintNg\Services\FileService;
 use Shahnewaz\RedprintNg\Generators\LaravelGenerator;
 use Shahnewaz\RedprintNg\Generators\VueGenerator;
 use Symfony\Component\Console\Output\NullOutput;
+use Illuminate\Support\Str;
 
 class MakeCrudCommand extends Command
 {
@@ -197,7 +198,7 @@ class MakeCrudCommand extends Command
             'routePrefix' => $routePrefix,
             'layout' => $layout,
             'softDeletes' => $this->promptForSoftDeletes(),
-            'columns' => $this->getColumns(),
+            'columns' => $this->getColumns($namespace),
             'basePath' => $this->basePath,
             'axios_instance' => config('redprint.axios_instance')
         ];
@@ -234,7 +235,7 @@ class MakeCrudCommand extends Command
         $generator->generate();
     }
 
-    private function promptForColumns()
+    private function promptForColumns($namespace)
     {
         $columns = [];
         $this->info("\nPlease enter the first column name for the migration (id and timestamp columns are automatically added).");
@@ -265,6 +266,26 @@ class MakeCrudCommand extends Command
                 'string'
             );
 
+            // Check for relationship field
+            $relationshipData = null;
+            if (str_ends_with($name, '_id') && in_array($type, ['integer', 'bigInteger'])) {
+                $relatedModelLower = Str::beforeLast($name, '_id');
+                $relatedModelPlural = Str::plural($relatedModelLower);
+                $possibleApiEndpoint = "{$namespace}/{$relatedModelPlural}/list";
+                
+                $this->info("This looks like a model Relationship. Do you want to load options for this field from an Api endpoint?");
+                if ($this->askYesNo("This looks like a model Relationship. Do you want to load options for this field from an Api endpoint?", "y")) {
+                    $apiEndpoint = $this->ask('Please type in the Api endpoint to load data', $possibleApiEndpoint);
+                    $labelColumn = $this->ask('Please type in the label column of the related model (e.g., name)', 'name');
+                    
+                    $relationshipData = [
+                        'endpoint' => $apiEndpoint,
+                        'labelColumn' => $labelColumn,
+                        'relatedModelLower' => $relatedModelLower
+                    ];
+                }
+            }
+
             // Additional prompts for enum type
             $enumValues = [];
             if ($type === 'enum') {
@@ -281,7 +302,8 @@ class MakeCrudCommand extends Command
                 'type' => $type,
                 'nullable' => $nullable,
                 'default' => $default,
-                'enumValues' => $enumValues
+                'enumValues' => $enumValues,
+                'relationshipData' => $relationshipData
             ];
 
             $addAnother = $this->askYesNo("\nDo you want to add another column?");
@@ -290,7 +312,7 @@ class MakeCrudCommand extends Command
         return $columns;
     }
 
-    protected function getColumns(): array
+    protected function getColumns($namespace): array
     {
         // If columns were set via setColumns(), return those
         if (!empty($this->columns) && !$this->isInteractive) {
@@ -298,7 +320,7 @@ class MakeCrudCommand extends Command
         }
 
         // Get them interactively
-        $columns = $this->promptForColumns();
+        $columns = $this->promptForColumns($namespace);
 
         return $columns;
     }

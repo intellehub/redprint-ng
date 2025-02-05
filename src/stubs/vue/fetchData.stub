@@ -1,0 +1,11 @@
+fetch{{ relatedModelLower }}Data() {
+    var self = this
+    {{ axiosInstance }}.get(`{{ relatedApiEndpoint}}`).then((response) => {
+        self.loading = false
+        self.{{ relatedModelLower }}Data = response.data.data
+    }).catch((e) => {
+        console.log(e)
+        self.$message({type: 'error', message: self.$t('messages.load_error')})
+        self.loading = false
+    })
+}

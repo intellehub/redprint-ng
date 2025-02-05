@@ -92,20 +92,22 @@ export default {
     },
     methods: {
         fetchItems() {
+            var self = this
             this.loading = true
             {{ axiosInstance }}.get(`{{ namespaceLower }}/{{ routePath }}`, {
                 params: {
-                    ...this.searchQuery,
-                    page: this.currentPage
+                    ...self.searchQuery,
+                    page: self.currentPage
                 }
             })
             .then(response => {
-                this.items = response.data.data
-                this.paginationTotal = response.data.meta.total
-                this.loading = false
+                self.items = response.data.data
+                self.paginationTotal = response.data.meta.total
+                self.loading = false
             })
             .catch(() => {
-                this.loading = false
+                self.$message({type: 'error', message: self.$t('messages.load_error')})
+                self.loading = false
             })
         },
         handleSearch: _.debounce(function() {
