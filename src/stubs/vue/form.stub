@@ -86,14 +86,17 @@ export default {
     cancel() {
       this.$router.push({ name: 'pages.{{ routeNamespace }}.{{ routeName }}.index' })
     },
+    // Fetch relationship data
+    {{ relationshipDataFetchers }}
   },
   mounted() {
+    // Load relationship data
+    {{ relationshipDataFetcherMethodCalls }}
+
     if (this.$route.query.id) {
       this.id = this.$route.query.id
       this.fetchItem()
     }
-    // Fetch relationship data
-    {{ relationshipDataFetchers }}
   },
   components: {
     InputGroup,

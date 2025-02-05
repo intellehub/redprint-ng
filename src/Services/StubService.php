@@ -26,10 +26,7 @@ class StubService
     public function processStub(string $content, array $replacements): string
     {
         foreach ($replacements as $key => $value) {
-            // Ensure we're not replacing with empty content
-            if ($value !== null && $value !== '') {
-                $content = str_replace($key, $value, $content);
-            }
+            $content = str_replace($key, $value, $content);
         }
         
         // For debugging

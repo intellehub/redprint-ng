@@ -225,14 +225,23 @@ class LaravelGenerator
         ];
         
         foreach ($this->modelData['columns'] as $column) {
-            $columns[] = "            '{$column['name']}' => \$this->{$column['name']},";
+            $castedValue = match($column['type']) {
+                'integer', 'bigInt' => "(int) \$this->{$column['name']},",
+                'float', 'decimal', 'double' => "(float) \$this->{$column['name']},",
+                'boolean', 'tinyInteger' => "(bool) \$this->{$column['name']},",
+                'datetime', 'timestamp' => "\$this->{$column['name']}?->format('Y-m-d H:i:s'),",
+                'date' => "\$this->{$column['name']}?->format('Y-m-d'),",
+                default => "\$this->{$column['name']},"
+            };
+            
+            $columns[] = "            '{$column['name']}' => " . $castedValue;
         }
         
-        $columns[] = "            'created_at' => \$this->created_at,";
-        $columns[] = "            'updated_at' => \$this->updated_at,";
+        $columns[] = "            'created_at' => \$this->created_at->format('Y-m-d H:i:s'),";
+        $columns[] = "            'updated_at' => \$this->updated_at->format('Y-m-d H:i:s'),";
         
         if ($this->modelData['softDeletes']) {
-            $columns[] = "            'deleted_at' => \$this->deleted_at,";
+            $columns[] = "            'deleted_at' => \$this->deleted_at?->format('Y-m-d H:i:s'),";
         }
         
         return implode("\n", $columns);

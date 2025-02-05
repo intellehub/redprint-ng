@@ -110,6 +110,7 @@ class VueGenerator
             // Relationship related (always include with empty default)
             '{{ relationshipDataVariables }}' => $this->getRelationshipDataVariables(),
             '{{ relationshipDataFetchers }}' => $this->generateRelationshipDataFetchers(),
+            '{{ relationshipDataFetcherMethodCalls }}' => $this->generateRelationshipDataFetcherMethodCalls(),
         ];
 
         return $this->stubService->processStub($stubContent, $replacements);
@@ -219,8 +220,8 @@ class VueGenerator
             // Load from .stub file
             $content = $this->stubService->getStub("vue/common/{$component}.stub");
             
-            // Save as .vue file
-            $success = $this->fileService->createFile(
+            // Use copyFile for pre-formatted common components
+            $success = $this->fileService->copyFile(
                 "{$this->basePath}/resources/js/components/Common/{$component}.vue",
                 $content
             );
@@ -394,12 +395,24 @@ HTML;
                 $stub = $this->stubService->getStub('vue/fetchData.stub');
                 $fetchers[] = $this->stubService->processStub($stub, [
                     '{{ axiosInstance }}' => $this->modelData['axios_instance'] ?? 'axiosInstance',
+                    '{{ relatedModelTitleCase }}' => Str::title($column['relationshipData']['relatedModelLower']),
                     '{{ relatedModelLower }}' => $column['relationshipData']['relatedModelLower'],
                     '{{ relatedApiEndpoint }}' => $column['relationshipData']['endpoint']
-                ]);
+                ]) . ',';
             }
         }
         return !empty($fetchers) ? implode("\n        ", $fetchers) : '';
+    }
+
+    private function generateRelationshipDataFetcherMethodCalls(): string
+    {
+        $fetcherCalls = [];
+        foreach ($this->modelData['columns'] as $column) {
+            if (!empty($column['relationshipData'])) {
+                $fetcherCalls[] = 'this.fetch'.Str::title($column['relationshipData']['relatedModelLower']).'Data()';
+            }
+        }
+        return !empty($fetcherCalls) ? implode("\n        ", $fetcherCalls) : '';
     }
 
     private function getInputType(string $columnType): string
