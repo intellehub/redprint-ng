@@ -10,6 +10,7 @@ use Shahnewaz\RedprintNg\Generators\LaravelGenerator;
 use Shahnewaz\RedprintNg\Generators\VueGenerator;
 use Symfony\Component\Console\Output\NullOutput;
 use Illuminate\Support\Str;
+use Shahnewaz\RedprintNg\Enums\DataTypes;
 
 class MakeCrudCommand extends Command
 {
@@ -260,11 +261,7 @@ class MakeCrudCommand extends Command
             
             $this->info('Column name: ' . $name);
             
-            $type = $this->choice(
-                'Data Type (type to search, or select number)',
-                $this->supportedDataTypes,
-                'string'
-            );
+            $type = $this->getColumnType();
 
             // Check for relationship field
             $relationshipData = null;
@@ -323,5 +320,14 @@ class MakeCrudCommand extends Command
         $columns = $this->promptForColumns($namespace);
 
         return $columns;
+    }
+
+    private function getColumnType(): string
+    {
+        return $this->choice(
+            'What is the column type?',
+            DataTypes::getAvailableTypes(),
+            0
+        );
     }
 }

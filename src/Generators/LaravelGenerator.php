@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use Shahnewaz\RedprintNg\Services\StubService;
 use Shahnewaz\RedprintNg\Services\FileService;
 use Illuminate\Support\Facades\File;
+use Shahnewaz\RedprintNg\Enums\DataTypes;
 
 class LaravelGenerator
 {
@@ -207,21 +208,16 @@ class LaravelGenerator
         return implode("\n            ", $definitions);
     }
 
-    private function getMigrationType(string $type): string
+    // Then map these chosen types to Laravel migration types
+    private function getMigrationType(string $chosenType): string
     {
-        return match($type) {
-            'text' => 'text',
-            'boolean' => 'boolean',
-            'number' => 'integer',
-            'datetime' => 'datetime',
-            default => 'string',
-        };
+        return DataTypes::from($chosenType)->getMigrationType();
     }
 
     private function getResourceColumns(): string
     {
         $columns = [
-            "'id' => \$this->id,"
+            "'id' => (int) \$this->id,"
         ];
         
         foreach ($this->modelData['columns'] as $column) {
