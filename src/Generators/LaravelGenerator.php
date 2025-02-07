@@ -221,12 +221,42 @@ class LaravelGenerator
         ];
         
         foreach ($this->modelData['columns'] as $column) {
-            $castedValue = match($column['type']) {
-                'integer', 'bigInt' => "(int) \$this->{$column['name']},",
-                'float', 'decimal', 'double' => "(float) \$this->{$column['name']},",
-                'boolean', 'tinyInteger' => "(bool) \$this->{$column['name']},",
-                'datetime', 'timestamp' => "\$this->{$column['name']}?->format('Y-m-d H:i:s'),",
-                'date' => "\$this->{$column['name']}?->format('Y-m-d'),",
+            $type = DataTypes::from($column['type']);
+            $castedValue = match($type) {
+                // Integer types
+                DataTypes::INTEGER,
+                DataTypes::BIG_INTEGER,
+                DataTypes::SMALL_INTEGER,
+                DataTypes::TINY_INTEGER,
+                DataTypes::UNSIGNED_INTEGER,
+                DataTypes::UNSIGNED_BIG_INTEGER => "(int) \$this->{$column['name']},",
+                
+                // Float types
+                DataTypes::FLOAT,
+                DataTypes::DOUBLE,
+                DataTypes::DECIMAL => "(float) \$this->{$column['name']},",
+                
+                // Boolean type
+                DataTypes::BOOLEAN => "(bool) \$this->{$column['name']},",
+                
+                // DateTime types
+                DataTypes::DATETIME,
+                DataTypes::TIMESTAMP => "\$this->{$column['name']}?->format('Y-m-d H:i:s'),",
+                
+                // Date type
+                DataTypes::DATE => "\$this->{$column['name']}?->format('Y-m-d'),",
+                
+                // Time type
+                DataTypes::TIME => "\$this->{$column['name']}?->format('H:i:s'),",
+                
+                // Year type
+                DataTypes::YEAR => "\$this->{$column['name']}?->format('Y'),",
+                
+                // JSON types
+                DataTypes::JSON,
+                DataTypes::JSONB => "json_decode(\$this->{$column['name']}, true),",
+                
+                // Default for string types and others
                 default => "\$this->{$column['name']},"
             };
             

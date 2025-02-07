@@ -100,6 +100,12 @@ class MakeCrudCommandTestWithRelation extends TestCase
                 'default' => null,
             ],
             [
+                'name' => 'price',
+                'type' => 'double',
+                'nullable' => false,
+                'default' => 0,
+            ],
+            [
                 'name' => 'published',
                 'type' => 'boolean',
                 'nullable' => false,

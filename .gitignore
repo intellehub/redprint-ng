@@ -2,3 +2,4 @@
 .phpintel/*
 .idea
 /temp_files
+.DS_Store
