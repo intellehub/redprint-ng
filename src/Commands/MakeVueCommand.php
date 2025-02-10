@@ -39,31 +39,22 @@ class MakeVueCommand extends Command
 
     public function handle()
     {
-        error_log("Starting handle() method");
-        
         $type = $this->choice(
             'What type of component would you like to create?',
             ['blank', 'list', 'form']
         );
-        
-        error_log("Selected type: " . $type);
 
         switch ($type) {
             case 'blank':
-                error_log("Handling blank template");
                 $this->handleBlankTemplate();
                 break;
             case 'list':
-                error_log("Handling list template");
                 $this->handleListTemplate();
                 break;
             case 'form':
-                error_log("Handling form template");
                 $this->handleFormTemplate();
                 break;
         }
-
-        error_log("Finished handle() method");
         return 0;
     }
 

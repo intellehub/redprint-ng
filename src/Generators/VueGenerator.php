@@ -44,9 +44,6 @@ class VueGenerator
 
     public function __construct(string $basePath, array $modelData, Command $command)
     {
-        error_log("VueGenerator constructor - basePath: " . $basePath);
-        error_log("VueGenerator constructor - modelData basePath: " . ($modelData['basePath'] ?? 'not set'));
-        
         $this->stubService = new StubService();
         $this->fileService = new FileService();
         $this->basePath = $basePath;
@@ -430,19 +427,14 @@ HTML;
 
     public function normalizePath(string $path): string
     {
-        error_log("Normalizing path: " . $path);
         // Remove @/ prefix if present
         $path = preg_replace('/^@\//', 'resources/js/', $path);
-        error_log("After normalization: " . $path);
         return $path;
     }
 
     public function generateBlankComponent(string $path): bool
     {
         try {
-            error_log("Generating blank component at path: " . $path);
-            error_log("Current basePath: " . $this->basePath);
-            error_log("Current modelData basePath: " . ($this->modelData['basePath'] ?? 'not set'));
             
             $content = $this->stubService->getStub('vue/component.stub');
             $processedContent = $this->stubService->processStub($content, [
@@ -450,12 +442,8 @@ HTML;
             ]);
             
             $fullPath = $this->basePath . '/'. $path;
-            error_log("Full path for file creation: " . $fullPath);
-            
             return $this->fileService->createFile($fullPath, $processedContent);
         } catch (\Exception $e) {
-            error_log("Error generating blank component: " . $e->getMessage());
-            error_log("Stack trace: " . $e->getTraceAsString());
             throw $e;
         }
     }
