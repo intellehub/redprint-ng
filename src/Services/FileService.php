@@ -27,6 +27,7 @@ class FileService
             $extension = pathinfo($path, PATHINFO_EXTENSION);
             $formattedContent = match($extension) {
                 'vue' => $this->formatterService->formatVueContent($content),
+                'ts' => $this->formatterService->formatVueContent($content),
                 'php' => $this->formatterService->formatPhpContent($content),
                 default => $content
             };
