@@ -6,7 +6,7 @@ use Illuminate\Support\Str;
 
 trait HandlesColumnInput
 {
-    private function promptForColumns(?string $namespace = null): array
+    private function getColumnInput(?string $namespace = null): array
     {
         $columns = [];
         $this->info("\nPlease enter column names" . ($namespace ? " for the {$namespace} module" : "") . ":");
