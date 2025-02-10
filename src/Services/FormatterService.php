@@ -7,7 +7,6 @@ use Navindex\HtmlFormatter\Formatter as HTMLFormatter;
 class FormatterService
 {
     private HTMLFormatter $htmlFormatter;
-    private PrettierService $prettier;
 
     public function __construct()
     {
@@ -23,7 +22,8 @@ class FormatterService
             'el-button', 
             'el-checkbox', 
             'router-link',
-            'el-link'
+            'el-link',
+            'template'
         ]);
         
         // Add Vue-specific self-closing elements
@@ -41,6 +41,7 @@ class FormatterService
     private function formatScriptContent(string $content): string
     {
         return $this->prettier->formatScript($content);
+        // return $content;
     }
 
     public function formatVueContent(string $content): string

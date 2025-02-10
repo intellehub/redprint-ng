@@ -4,6 +4,7 @@ namespace Shahnewaz\RedprintNg\Generators;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Shahnewaz\RedprintNg\Services\StubService;
 use Shahnewaz\RedprintNg\Services\FileService;
 use Illuminate\Support\Facades\File;
@@ -13,8 +14,8 @@ class VueGenerator
     private StubService $stubService;
     private FileService $fileService;
     private string $basePath;
-    private array $modelData = [];
-    private ?Command $command;
+    private array $modelData;
+    private Command $command;
 
     private array $inputTypeMap = [
         // Numbers
@@ -22,42 +23,35 @@ class VueGenerator
         'bigInt' => 'number',
         'float' => 'number',
         'decimal' => 'number',
-        
+
         // Dates
         'timestamp' => 'datetime',
         'dateTime' => 'datetime',
         'date' => 'datetime',
-        
+
         // Text
         'text' => 'text',
         'longText' => 'text',
         'mediumText' => 'text',
-        
+
         // Boolean
         'boolean' => 'boolean',
         'tinyInteger' => 'boolean',
-        
+
         // Default
         'string' => 'string'
     ];
 
-    public function __construct(Command|string $basePathOrCommand, ?array $modelData = null, ?Command $command = null)
+    public function __construct(string $basePath, array $modelData, Command $command)
     {
+        error_log("VueGenerator constructor - basePath: " . $basePath);
+        error_log("VueGenerator constructor - modelData basePath: " . ($modelData['basePath'] ?? 'not set'));
+        
         $this->stubService = new StubService();
         $this->fileService = new FileService();
-        
-        // Handle both new and old constructor patterns
-        if ($basePathOrCommand instanceof Command) {
-            $this->command = $basePathOrCommand;
-            $this->basePath = getcwd(); // Default to current working directory
-        } else {
-            $this->basePath = $basePathOrCommand;
-            $this->command = $command;
-        }
-        
-        if ($modelData) {
-            $this->modelData = $modelData;
-        }
+        $this->basePath = $basePath;
+        $this->modelData = $modelData;
+        $this->command = $command;
     }
 
     public function generate()
@@ -72,7 +66,7 @@ class VueGenerator
     protected function createDirectories()
     {
         $directories = [
-            $this->basePath . '/resources/js/components/' . $this->modelData['namespace'] . '/'. $this->modelData['model'],
+            $this->basePath . '/resources/js/components/' . $this->modelData['namespace'] . '/' . $this->modelData['model'],
             $this->basePath . '/resources/js/router',
         ];
 
@@ -85,42 +79,46 @@ class VueGenerator
 
     private function processVueStub(string $stubContent): string
     {
-        $model = $this->modelData['model'];
-        $namespace = $this->modelData['namespace'];
-        
+        $model = $this->modelData['model'] ?? '';
+        $namespace = $this->modelData['namespace'] ?? '';
+
         // Common replacements used across multiple stubs
         $replacements = [
             // Model related
             '{{ modelName }}' => $model,
             '{{ modelLower }}' => Str::lower($model),
             '{{ modelPlural }}' => Str::plural(Str::lower($model)),
-            
+
             // Namespace related
             '{{ namespace }}' => $namespace,
             '{{ namespaceLower }}' => Str::lower($namespace),
             '{{ routeNamespace }}' => $this->getRoutNamespace(),
-            
+
             // Route related
             '{{ routeName }}' => $this->getRouteName(),
             '{{ routePath }}' => $this->getRouteName(),
-            
+
             // Axios related
             '{{ axiosImport }}' => $this->getAxiosImport(),
             '{{ axiosInstance }}' => $this->modelData['axios_instance'] ?? 'axiosInstance',
-            
+
             // Table related
             '{{ tableHeaderItems }}' => $this->getTableHeaderItems(),
             '{{ tableBodyItems }}' => $this->getTableBodyItems(),
             '{{ modelFirstColumn }}' => $this->getFirstColumn(),
-            
+
             // Form related
             '{{ inputFields }}' => $this->getInputFields(),
             '{{ formInputVariables }}' => $this->getFormInputVariables(),
-            
+
             // Relationship related (always include with empty default)
             '{{ relationshipDataVariables }}' => $this->getRelationshipDataVariables(),
             '{{ relationshipDataFetchers }}' => $this->generateRelationshipDataFetchers(),
             '{{ relationshipDataFetcherMethodCalls }}' => $this->generateRelationshipDataFetcherMethodCalls(),
+
+            '{{ endpoint }}' => $this->modelData['endpoint'] ?? '',
+            '{{ componentName }}' => $this->modelData['componentName'] ?? '',
+            '{{ searchColumn }}' => $this->modelData['searchColumn'] ?? '',
         ];
 
         return $this->stubService->processStub($stubContent, $replacements);
@@ -137,7 +135,7 @@ class VueGenerator
     {
         $content = $this->stubService->getStub('vue/index.stub');
         $processedContent = $this->processVueStub($content);
-        
+
         return $this->fileService->createFile(
             "{$this->basePath}/resources/js/components/{$this->modelData['namespace']}/{$this->modelData['model']}/{$this->modelData['model']}Index.vue",
             $processedContent
@@ -148,7 +146,7 @@ class VueGenerator
     {
         $content = $this->stubService->getStub('vue/form.stub');
         $processedContent = $this->processVueStub($content);
-        
+
         return $this->fileService->createFile(
             "{$this->basePath}/resources/js/components/{$this->modelData['namespace']}/{$this->modelData['model']}/{$this->modelData['model']}Form.vue",
             $processedContent
@@ -160,11 +158,11 @@ class VueGenerator
         $baseRoutePath = config('redprint.vue_router_location', 'resources/js/router/routes.ts');
         $mainRouterPath = "{$this->basePath}/" . $baseRoutePath;
         $routerDir = dirname($mainRouterPath);
-        
+
         // Generate the new routes file
         $routeStub = $this->stubService->getStub('vue/route.stub');
         $newRoute = $this->processVueStub($routeStub);
-        
+
         // Save the new routes file
         $newRouterPath = "{$routerDir}/{$this->modelData['model']}Routes.ts";
         if (!$this->fileService->createFile($newRouterPath, $newRoute)) {
@@ -185,7 +183,7 @@ class VueGenerator
 
         $routerContent = file_get_contents($mainRouterPath);
         $model = $this->modelData['model'];
-        
+
         // Add import
         $lastImportPos = strrpos($routerContent, 'import');
         $insertImport = "\nimport { {$model}Routes } from \"@/router/{$model}Routes\";\n";
@@ -200,12 +198,12 @@ class VueGenerator
 
         // Get content up to the closing bracket
         $beforeClosing = substr($routerContent, 0, $routesArrayEnd);
-        
+
         // Find the last actual route entry
         if (preg_match('/\s+(\w+Routes)\s*$/', $beforeClosing, $matches)) {
             $lastRoute = $matches[1];
             $lastRoutePos = strrpos($beforeClosing, $lastRoute);
-            
+
             // Replace the last route with the same route plus a comma
             $routerContent = substr_replace(
                 $routerContent,
@@ -214,7 +212,7 @@ class VueGenerator
                 strlen($lastRoute)
             );
         }
-        
+
         // Add our new route
         $newRouteEntry = "\n    {$model}Routes\n";
         $routerContent = substr_replace($routerContent, $newRouteEntry, $routesArrayEnd, 0);
@@ -225,37 +223,37 @@ class VueGenerator
     public function generateCommonComponents(): bool
     {
         $commonComponents = ['Empty', 'FormError', 'InputGroup', 'DefaultRouterView'];
-        
+
         foreach ($commonComponents as $component) {
             // Load from .stub file
             $content = $this->stubService->getStub("vue/common/{$component}.stub");
-            
+
             // Use copyFile for pre-formatted common components
             $success = $this->fileService->copyFile(
                 "{$this->basePath}/resources/js/components/Common/{$component}.vue",
                 $content
             );
-            
+
             if (!$success) {
                 $this->command->error("Failed to create {$component} component");
                 return false;
             }
-            
+
             $this->command->info("{$component} component created successfully");
         }
-        
+
         return true;
     }
 
     private function getRouteName(): string
     {
         // Convert BlogPost to blog-posts
-        return Str::plural(Str::kebab($this->modelData['model']));
+        return Str::plural(Str::kebab($this->modelData['model'] ?? ''));
     }
 
     private function getRoutNamespace(): string
     {
-        return Str::lower($this->modelData['namespace']);
+        return Str::lower($this->modelData['namespace'] ?? '');
     }
 
     private function getAxiosImport(): string
@@ -292,7 +290,7 @@ JS;
     private function getTableHeaderItems(): string
     {
         if (empty($this->modelData['columns'])) {
-            throw new \RuntimeException('No columns defined in modelData');
+            throw new RuntimeException('No columns defined in modelData');
         }
 
         $headers = [];
@@ -301,7 +299,7 @@ JS;
                             <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 lg:pl-8">{{ \$t('common.{$column['name']}') }}</th>
 HTML;
         }
-        
+
         # DEBUG: error_log("Generated headers: " . print_r($headers, true));
         return implode("\n", $headers);
     }
@@ -309,7 +307,7 @@ HTML;
     private function getTableBodyItems(): string
     {
         if (empty($this->modelData['columns'])) {
-            throw new \RuntimeException('No columns defined in modelData');
+            throw new RuntimeException('No columns defined in modelData');
         }
 
         $rows = [];
@@ -318,7 +316,7 @@ HTML;
                             <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">{{ item.{$column['name']} }}</td>
 HTML;
         }
-        
+
         # DEBUG: error_log("Generated body rows: " . print_r($rows, true));
         return implode("\n", $rows);
     }
@@ -326,14 +324,14 @@ HTML;
     private function getInputFields(): string
     {
         if (empty($this->modelData['columns'])) {
-            throw new \RuntimeException('No columns defined in model. Aborting...');
+            throw new RuntimeException('No columns defined in model. Aborting...');
         }
 
         $fields = [];
         foreach ($this->modelData['columns'] as $column) {
             $fields[] = $this->generateInputField($column);
         }
-        
+
         # DEBUG: error_log("Generated input fields: " . print_r($fields, true));
         return implode("\n        ", $fields);
     }
@@ -341,7 +339,7 @@ HTML;
     private function getFormInputVariables(): string
     {
         if (empty($this->modelData['columns'])) {
-            throw new \RuntimeException('No columns defined in model. Aborting...');
+            throw new RuntimeException('No columns defined in model. Aborting...');
         }
 
         $variables = [];
@@ -373,12 +371,12 @@ HTML;
         }
 
         $type = $this->getInputType($column['type']);
-        $mappedType = match($type) {
+        $mappedType = match ($type) {
             default => $type
         };
-        
+
         $stubName = "vue/form/{$mappedType}.stub";
-        
+
         $stub = $this->stubService->getStub($stubName);
         return $this->stubService->processStub($stub, [
             '{{ name }}' => $column['name']
@@ -404,11 +402,11 @@ HTML;
             if (!empty($column['relationshipData'])) {
                 $stub = $this->stubService->getStub('vue/fetchData.stub');
                 $fetchers[] = $this->stubService->processStub($stub, [
-                    '{{ axiosInstance }}' => $this->modelData['axios_instance'] ?? 'axiosInstance',
-                    '{{ relatedModelTitleCase }}' => Str::title($column['relationshipData']['relatedModelLower']),
-                    '{{ relatedModelLower }}' => $column['relationshipData']['relatedModelLower'],
-                    '{{ relatedApiEndpoint }}' => $column['relationshipData']['endpoint']
-                ]) . ',';
+                        '{{ axiosInstance }}' => $this->modelData['axios_instance'] ?? 'axiosInstance',
+                        '{{ relatedModelTitleCase }}' => Str::title($column['relationshipData']['relatedModelLower']),
+                        '{{ relatedModelLower }}' => $column['relationshipData']['relatedModelLower'],
+                        '{{ relatedApiEndpoint }}' => $column['relationshipData']['endpoint']
+                    ]) . ',';
             }
         }
         return !empty($fetchers) ? implode("\n        ", $fetchers) : '';
@@ -419,7 +417,7 @@ HTML;
         $fetcherCalls = [];
         foreach ($this->modelData['columns'] as $column) {
             if (!empty($column['relationshipData'])) {
-                $fetcherCalls[] = 'this.fetch'.Str::title($column['relationshipData']['relatedModelLower']).'Data()';
+                $fetcherCalls[] = 'this.fetch' . Str::title($column['relationshipData']['relatedModelLower']) . 'Data()';
             }
         }
         return !empty($fetcherCalls) ? implode("\n        ", $fetcherCalls) : '';
@@ -432,50 +430,53 @@ HTML;
 
     public function normalizePath(string $path): string
     {
-        // Remove .vue extension if provided
-        $path = preg_replace('/\.vue$/', '', $path);
-        
-        // Handle @ prefix
-        if (str_starts_with($path, '@/')) {
-            $path = 'resources/js' . substr($path, 1);
-        }
-        
-        // Handle dot notation
-        $path = str_replace('.', '/', $path);
-        
-        // Ensure resources/js prefix
-        if (!str_starts_with($path, 'resources/js/')) {
-            $path = 'resources/js/' . $path;
-        }
-        
-        // Add .vue extension
-        return $path . '.vue';
+        error_log("Normalizing path: " . $path);
+        // Remove @/ prefix if present
+        $path = preg_replace('/^@\//', 'resources/js/', $path);
+        error_log("After normalization: " . $path);
+        return $path;
     }
 
-    public function generateBlankComponent(string $path, string $componentName): bool
+    public function generateBlankComponent(string $path): bool
     {
-        $content = $this->stubService->getStub('vue/component.stub');
-        $processedContent = $this->stubService->processStub($content, [
-            '{{ componentName }}' => $componentName
-        ]);
-        
-        return $this->fileService->createFile($path, $processedContent);
+        try {
+            error_log("Generating blank component at path: " . $path);
+            error_log("Current basePath: " . $this->basePath);
+            error_log("Current modelData basePath: " . ($this->modelData['basePath'] ?? 'not set'));
+            
+            $content = $this->stubService->getStub('vue/component.stub');
+            $processedContent = $this->stubService->processStub($content, [
+                '{{ componentName }}' => basename($path, '.vue'),
+            ]);
+            
+            $fullPath = $this->basePath . '/'. $path;
+            error_log("Full path for file creation: " . $fullPath);
+            
+            return $this->fileService->createFile($fullPath, $processedContent);
+        } catch (\Exception $e) {
+            error_log("Error generating blank component: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            throw $e;
+        }
     }
 
     public function generateListPageComponent(string $path): bool
     {
         $content = $this->stubService->getStub('vue/listPage.stub');
         $processedContent = $this->processVueStub($content);
-        
-        return $this->fileService->createFile($path, $processedContent);
+
+        $fullPath = $this->basePath . '/'. $path;
+
+        return $this->fileService->createFile($fullPath, $processedContent);
     }
 
     public function generateFormPageComponent(string $path): bool
     {
         $content = $this->stubService->getStub('vue/formPage.stub');
         $processedContent = $this->processVueStub($content);
-        
-        return $this->fileService->createFile($path, $processedContent);
+        $fullPath = $this->basePath . '/'. $path;
+
+        return $this->fileService->createFile($fullPath, $processedContent);
     }
 
     public function setModelData(array $data): void

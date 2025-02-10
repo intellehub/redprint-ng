@@ -9,7 +9,6 @@ use Shahnewaz\RedprintNg\Services\FileService;
 use Shahnewaz\RedprintNg\Generators\LaravelGenerator;
 use Shahnewaz\RedprintNg\Generators\VueGenerator;
 use Symfony\Component\Console\Output\NullOutput;
-use Illuminate\Support\Str;
 use Shahnewaz\RedprintNg\Enums\DataTypes;
 use Shahnewaz\RedprintNg\Traits\HandlesColumnInput;
 
@@ -30,22 +29,6 @@ class MakeCrudCommand extends Command
      * @var string
      */
     protected $description = 'Generate CRUD files for a model';
-
-    private $supportedDataTypes = [
-        'string',
-        'text',
-        'integer',
-        'bigInteger',
-        'float',
-        'double',
-        'decimal',
-        'boolean',
-        'date',
-        'dateTime',
-        'time',
-        'json',
-        'enum'
-    ];
 
     private $columns = [];
     protected string $basePath;
