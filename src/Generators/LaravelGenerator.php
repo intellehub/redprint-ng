@@ -58,7 +58,7 @@ class LaravelGenerator
     public function generateMigration(): bool
     {
         $model = $this->modelData['model'];
-        $tableName = Str::plural(Str::lower($model));
+        $tableName = Str::snake(Str::plural($model));
         
         $timestamp = date('Y_m_d_His');
         $filename = "{$timestamp}_create_{$tableName}_table.php";
@@ -145,6 +145,8 @@ class LaravelGenerator
     public function updateRoutes(): bool
     {
         $model = $this->modelData['model'];
+        $routePath = Str::plural(Str::kebab($model));
+        
         $routePrefix = $this->modelData['routePrefix'] 
             ? $this->modelData['routePrefix'].'/'.Str::lower($this->modelData['namespace'])
             : Str::lower($this->modelData['namespace']);
@@ -154,14 +156,14 @@ class LaravelGenerator
         
         $routeContent = "\n\nuse App\\Http\\Controllers\\Api{$namespace}\\{$model}Controller;";
         $routeContent .= "\n\nRoute::prefix('{$routePrefix}')->middleware(['auth:api'])->group(function () {";
-        $routeContent .= "\n    Route::get('" . Str::plural(Str::lower($model)) . "', [{$model}Controller::class, 'getIndex']);";
-        $routeContent .= "\n    Route::get('" . Str::plural(Str::lower($model)) . "/list', [{$model}Controller::class, 'listAll']);";
-        $routeContent .= "\n    Route::get('" . Str::plural(Str::lower($model)) . "/{id}', [{$model}Controller::class, 'show']);";
-        $routeContent .= "\n    Route::post('" . Str::plural(Str::lower($model)) . "/save', [{$model}Controller::class, 'save']);";
-        $routeContent .= "\n    Route::delete('" . Str::plural(Str::lower($model)) . "/{id}', [{$model}Controller::class, 'delete']);";
+        $routeContent .= "\n    Route::get('{$routePath}', [{$model}Controller::class, 'getIndex']);";
+        $routeContent .= "\n    Route::get('{$routePath}/list', [{$model}Controller::class, 'listAll']);";
+        $routeContent .= "\n    Route::get('{$routePath}/{id}', [{$model}Controller::class, 'show']);";
+        $routeContent .= "\n    Route::post('{$routePath}/save', [{$model}Controller::class, 'save']);";
+        $routeContent .= "\n    Route::delete('{$routePath}/{id}', [{$model}Controller::class, 'delete']);";
         
         if ($this->modelData['softDeletes']) {
-            $routeContent .= "\n    Route::delete('" . Str::plural(Str::lower($model)) . "/{id}/force', [{$model}Controller::class, 'deleteFromTrash']);";
+            $routeContent .= "\n    Route::delete('{$routePath}/{id}/force', [{$model}Controller::class, 'deleteFromTrash']);";
         }
         
         $routeContent .= "\n});";

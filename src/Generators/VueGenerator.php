@@ -239,8 +239,8 @@ class VueGenerator
 
     private function getRouteName(): string
     {
-        $modelPlural = Str::plural(Str::lower($this->modelData['model']));
-        return trim("{$modelPlural}");
+        // Convert BlogPost to blog-posts
+        return Str::plural(Str::kebab($this->modelData['model']));
     }
 
     private function getRoutNamespace(): string
