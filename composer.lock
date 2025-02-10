@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6a8baedb6de9ee67203b14f95d2496d7",
+    "content-hash": "46ad27e2e40502b5c29db44a15a098a9",
     "packages": [
         {
             "name": "brick/math",
@@ -2442,6 +2442,55 @@
             "time": "2024-12-08T08:18:47+00:00"
         },
         {
+            "name": "mck89/peast",
+            "version": "v1.16.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/mck89/peast.git",
+                "reference": "645ec21b650bc2aced18285c85f220d22afc1430"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mck89/peast/zipball/645ec21b650bc2aced18285c85f220d22afc1430",
+                "reference": "645ec21b650bc2aced18285c85f220d22afc1430",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "php": ">=5.4.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^4.0 || ^5.0 || ^6.0 || ^7.0 || ^8.0 || ^9.0"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.16.3-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Peast\\": "lib/Peast/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Marco Marchiò",
+                    "email": "marco.mm89@gmail.com"
+                }
+            ],
+            "description": "Peast is PHP library that generates AST for JavaScript code",
+            "support": {
+                "issues": "https://github.com/mck89/peast/issues",
+                "source": "https://github.com/mck89/peast/tree/v1.16.3"
+            },
+            "time": "2024-07-23T14:00:32+00:00"
+        },
+        {
             "name": "monolog/monolog",
             "version": "3.8.1",
             "source": {
@@ -2543,6 +2592,134 @@
                 }
             ],
             "time": "2024-12-05T17:15:07+00:00"
+        },
+        {
+            "name": "navindex/html-formatter",
+            "version": "v0.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/navindex/html-formatter.git",
+                "reference": "12753c3d5b2b2ec8a635f0e0b7fa102a66b4e221"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/navindex/html-formatter/zipball/12753c3d5b2b2ec8a635f0e0b7fa102a66b4e221",
+                "reference": "12753c3d5b2b2ec8a635f0e0b7fa102a66b4e221",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "navindex/simple-config": "^0.2.0",
+                "php": "^7.3|^8.0"
+            },
+            "require-dev": {
+                "larapack/dd": "^1.1",
+                "php-coveralls/php-coveralls": "^2.4",
+                "phpstan/phpstan": "^0.12.99",
+                "phpunit/phpunit": "^9.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Navindex\\HtmlFormatter\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Miklos Karpati",
+                    "email": "mk@navindex.com.au",
+                    "homepage": "https://www.navindex.com.au",
+                    "role": "Developer"
+                }
+            ],
+            "description": "HTML beautifier and minifier library for development and testing.",
+            "homepage": "https://github.com/navindex/html-formatter",
+            "keywords": [
+                "Navindex",
+                "beautify",
+                "format",
+                "html",
+                "indent",
+                "minify",
+                "php"
+            ],
+            "support": {
+                "issues": "https://github.com/navindex/html-formatter/issues",
+                "source": "https://github.com/navindex/html-formatter/tree/v0.1.1"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/sponsors/navindex",
+                    "type": "github"
+                }
+            ],
+            "time": "2021-10-14T08:47:34+00:00"
+        },
+        {
+            "name": "navindex/simple-config",
+            "version": "v0.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/navindex/simple-config.git",
+                "reference": "008b6341f0a2b310460828d9ffc060c88a911829"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/navindex/simple-config/zipball/008b6341f0a2b310460828d9ffc060c88a911829",
+                "reference": "008b6341f0a2b310460828d9ffc060c88a911829",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.3|^8.0"
+            },
+            "require-dev": {
+                "larapack/dd": "^1.1",
+                "php-coveralls/php-coveralls": "^2.4",
+                "phpstan/phpstan": "^0.12.99",
+                "phpunit/phpunit": "^9.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Navindex\\SimpleConfig\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Miklos Karpati",
+                    "email": "mk@navindex.com.au",
+                    "homepage": "https://www.navindex.com.au",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Simple library to create and modify a configuration structure.",
+            "homepage": "https://github.com/navindex/simple-config",
+            "keywords": [
+                "Navindex",
+                "config",
+                "configuration",
+                "options",
+                "php"
+            ],
+            "support": {
+                "issues": "https://github.com/navindex/simple-config/issues",
+                "source": "https://github.com/navindex/simple-config/tree/v0.2.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/sponsors/navindex",
+                    "type": "github"
+                }
+            ],
+            "time": "2021-09-27T07:35:57+00:00"
         },
         {
             "name": "nesbot/carbon",
@@ -7784,16 +7961,16 @@
         },
         {
             "name": "orchestra/testbench-core",
-            "version": "v9.9.3",
+            "version": "v9.9.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/orchestral/testbench-core.git",
-                "reference": "169abdebda487292a35a295bb56b25b0d6d21e60"
+                "reference": "473974c6ce2c6b10d65ff6b6f4106aa7939021f0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/orchestral/testbench-core/zipball/169abdebda487292a35a295bb56b25b0d6d21e60",
-                "reference": "169abdebda487292a35a295bb56b25b0d6d21e60",
+                "url": "https://api.github.com/repos/orchestral/testbench-core/zipball/473974c6ce2c6b10d65ff6b6f4106aa7939021f0",
+                "reference": "473974c6ce2c6b10d65ff6b6f4106aa7939021f0",
                 "shasum": ""
             },
             "require": {
@@ -7808,7 +7985,7 @@
                 "laravel/serializable-closure": "<1.3.0 || >=3.0.0",
                 "nunomaduro/collision": "<8.0.0 || >=9.0.0",
                 "orchestra/testbench-dusk": "<9.10.0 || >=10.0.0",
-                "phpunit/phpunit": "<10.5.35 || >=11.0.0 <11.3.6 || >=12.1.0"
+                "phpunit/phpunit": "<10.5.35 || >=11.0.0 <11.3.6 || >=12.0.0 <12.0.1 || >=12.1.0"
             },
             "require-dev": {
                 "fakerphp/faker": "^1.24",
@@ -7817,7 +7994,7 @@
                 "laravel/serializable-closure": "^1.3 || ^2.0",
                 "mockery/mockery": "^1.6.10",
                 "phpstan/phpstan": "^2.0",
-                "phpunit/phpunit": "^10.5.35 || ^11.3.6 || ^12.0.0",
+                "phpunit/phpunit": "^10.5.35 || ^11.3.6 || ^12.0.1",
                 "spatie/laravel-ray": "^1.39",
                 "symfony/process": "^7.0.3",
                 "symfony/yaml": "^7.0.3",
@@ -7873,7 +8050,7 @@
                 "issues": "https://github.com/orchestral/testbench/issues",
                 "source": "https://github.com/orchestral/testbench-core"
             },
-            "time": "2025-02-02T09:59:23+00:00"
+            "time": "2025-02-07T11:21:53+00:00"
         },
         {
             "name": "orchestra/workbench",
@@ -8386,16 +8563,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "11.5.6",
+            "version": "11.5.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "3c3ae14c90f244cdda95028c3e469028e8d1c02c"
+                "reference": "e1cb706f019e2547039ca2c839898cd5f557ee5d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/3c3ae14c90f244cdda95028c3e469028e8d1c02c",
-                "reference": "3c3ae14c90f244cdda95028c3e469028e8d1c02c",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/e1cb706f019e2547039ca2c839898cd5f557ee5d",
+                "reference": "e1cb706f019e2547039ca2c839898cd5f557ee5d",
                 "shasum": ""
             },
             "require": {
@@ -8467,7 +8644,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/phpunit/issues",
                 "security": "https://github.com/sebastianbergmann/phpunit/security/policy",
-                "source": "https://github.com/sebastianbergmann/phpunit/tree/11.5.6"
+                "source": "https://github.com/sebastianbergmann/phpunit/tree/11.5.7"
             },
             "funding": [
                 {
@@ -8483,7 +8660,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-01-31T07:03:30+00:00"
+            "time": "2025-02-06T16:10:05+00:00"
         },
         {
             "name": "psy/psysh",

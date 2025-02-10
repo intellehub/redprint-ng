@@ -1,6 +1,6 @@
 fetch{{ relatedModelTitleCase }}Data() {
     var self = this
-    {{ axiosInstance }}.get(`{{ relatedApiEndpoint}}`).then((response) => {
+    {{ axiosInstance }}.get(`{{ relatedApiEndpoint }}`).then((response) => {
       self.loading = false
       self.{{ relatedModelLower }}Data = response.data.data
     }).catch((e) => {

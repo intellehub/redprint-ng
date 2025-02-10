@@ -19,7 +19,9 @@
         "php": "^8.1",
         "illuminate/support": "^11.0",
         "symfony/process": "^7.0",
-        "friendsofphp/php-cs-fixer": "^3.6"
+        "friendsofphp/php-cs-fixer": "^3.6",
+        "navindex/html-formatter": "^0.1.1",
+        "mck89/peast": "^1.16"
     },
     "require-dev": {
         "orchestra/testbench": "^9.0",
