@@ -1,0 +1,113 @@
+<template>
+    <div class="overflow-hidden rounded-[10px] bg-white dark:bg-boxdark p-5">
+        <div class="px-4 sm:px-6 lg:px-8">
+            <div class="sm:flex sm:items-center">
+                <div class="sm:flex-auto">
+                    <div class="mt-2">
+                        <input
+                            type="text"
+                            v-model="searchQuery.{{ modelFirstColumn }}"
+                            @input="handleSearch"
+                            :placeholder="$t('common.search')"
+                            class="w-full rounded-lg border-[1.5px] text-black border-stroke bg-transparent py-2 px-5 font-normal outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:text-white dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
+                        >
+                    </div>
+                </div>
+                <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+                    <button @click.prevent="gotoNew" type="button" class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                        {{ $t('common.new') }}</button>
+                </div>
+            </div>
+            <div class="mt-8 flow-root">
+                <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                    <div class="inline-block min-w-full py-2 align-middle">
+                        <el-container v-loading="loading" class="w-full">
+                            <table class="min-w-full divide-y divide-gray">
+                                <thead>
+                                    <tr>
+                                        {{ tableHeaderItems }}
+                                        <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6 lg:pr-8">
+                                            <span class="sr-only">{{ $t('common.actions') }}</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray bg-white">
+                                    <tr v-for="item in items" :key="item.id">
+                                        {{ tableBodyItems }}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </el-container>
+                        <Empty v-if="!loading && items.length === 0" :detail="$t('common.no_data')"></Empty>
+                        <div class="grid grid-cols-12 bg-[#F9FAFB] px-5 py-4 dark:bg-meta-4 lg:px-7.5 2xl:px-11" v-if="!loading">
+                            <el-pagination 
+                                @current-change="handlePageChange" 
+                                :current-page="currentPage"
+                                :hide-on-single-page="true" 
+                                background 
+                                layout="prev, pager, next" 
+                                :total="paginationTotal" 
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+{{ axiosImport }}
+import {_} from 'lodash'
+import Empty from "@/components/Common/Empty.vue"
+
+export default {
+    name: '{{ componentName }}',
+    data() {
+        return {
+            items: [],
+            searchQuery: {
+                {{ searchColumn }}: ''
+            },
+            currentPage: 1,
+            paginationTotal: 0,
+            loading: false
+        }
+    },
+    methods: {
+        fetchItems() {
+            var self = this
+            this.loading = true
+            {{ axiosInstance }}.get(`{{ endpoint }}`, {
+                params: {
+                    ...self.searchQuery,
+                    page: self.currentPage
+                }
+            })
+            .then(response => {
+                self.items = response.data.data
+                self.paginationTotal = response.data.meta.total
+                self.loading = false
+            })
+            .catch(() => {
+                self.$message({type: 'error', message: self.$t('messages.load_error')})
+                self.loading = false
+            })
+        },
+        handleSearch: _.debounce(function() {
+            this.currentPage = 1 // Reset to first page when searching
+            this.fetchItems()
+        }, 300),
+        handlePageChange(page) {
+            this.currentPage = page
+            this.fetchItems()
+        }
+    },
+    mounted() {
+        this.fetchItems()
+    },
+    components: {
+        Empty
+    }
+}
+</script>

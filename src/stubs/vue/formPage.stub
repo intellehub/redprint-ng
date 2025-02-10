@@ -35,7 +35,7 @@ import InputGroup from '@/components/Common/InputGroup.vue'
 import FormError from '@/components/Common/FormError.vue'
 
 export default {
-  name: '{{ modelName }}Form',
+  name: '{{ componentName }}',
   data() {
     return {
       form: {
@@ -50,19 +50,6 @@ export default {
     }
   },
   methods: {
-    fetchItem() {
-      var self = this
-      if (!this.id) return
-      this.loading = true
-      {{ axiosInstance }}.get(`{{ namespaceLower }}/{{ routePath }}/${this.id}`).then((response) => {
-        this.form = response.data.data
-        this.isEditing = true
-        this.loading = false
-      }).catch((error) => {
-        self.loading = false
-        // console.log(error)
-      })
-    },
     save() {
       var self = this
       const payload = { ...this.form }
@@ -71,10 +58,9 @@ export default {
         payload.id = this.id
       }
 
-      {{ axiosInstance }}.post(`{{ namespaceLower }}/{{ routePath }}/save`, payload).then(() => {
+      {{ axiosInstance }}.post(`{{ endpoint }}`, payload).then(() => {
         self.loading = false
         self.$message({type: 'success', message: self.$t('messages.save_success')})
-        self.$router.push({ name: 'pages.{{ routeNamespace }}.{{ routeName }}.index' })
       }).catch((e) => {
         self.$message({type: 'error', message: self.$t('messages.save_error')})
         self.loading = false
@@ -84,7 +70,7 @@ export default {
       })
     },
     cancel() {
-      this.$router.push({ name: 'pages.{{ routeNamespace }}.{{ routeName }}.index' })
+      // TODO: Implement cancel logic
     },
     // Fetch relationship data
     {{ relationshipDataFetchers }}

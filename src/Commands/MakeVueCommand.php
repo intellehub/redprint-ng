@@ -3,186 +3,83 @@
 namespace Shahnewaz\RedprintNg\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
+use Shahnewaz\RedprintNg\Generators\VueGenerator;
+use Shahnewaz\RedprintNg\Traits\HandlesColumnInput;
 
 class MakeVueCommand extends Command
 {
-    protected $signature = 'redprint:vue 
-        {component : The component path using dot notation}
-        {--layout= : The layout component to wrap with}
-        {--page : Whether to generate a page component with router-view}';
+    use HandlesColumnInput;
 
+    protected $signature = 'redprint:vue';
     protected $description = 'Create a new Vue component';
-
-    private function validateLayout($layout)
+    
+    private VueGenerator $generator;
+    
+    public function __construct()
     {
-        if (!$layout) {
-            return;
-        }
-
-        $layoutPath = resource_path("js/layouts/{$layout}.vue");
-        if (!file_exists($layoutPath)) {
-            throw new \Exception("Layout file not found at: {$layoutPath}");
-        }
+        parent::__construct();
+        $this->generator = new VueGenerator($this);
     }
 
     public function handle()
     {
-        try {
-            $component = $this->argument('component');
-            $layout = $this->option('layout');
-            $isPage = $this->option('page');
+        $template = $this->choice(
+            'Please choose the template:',
+            [
+                'blank' => 'Blank (Default)',
+                'list' => 'List Page',
+                'form' => 'Form Page'
+            ],
+            'blank'
+        );
 
-            // Validate layout if provided
-            if ($layout) {
-                $this->validateLayout($layout);
-            }
-
-            $parts = explode('.', $component);
-            
-            // Remove 'resources.js' from the beginning if present
-            if ($parts[0] === 'resources' && $parts[1] === 'js') {
-                array_shift($parts);
-                array_shift($parts);
-            }
-
-            // Get the component name (last part)
-            $componentName = array_pop($parts);
-            
-            // Build the path
-            $path = resource_path('js/' . implode('/', $parts));
-            
-            if (!file_exists($path)) {
-                mkdir($path, 0777, true);
-            }
-
-            // Choose the appropriate template based on options
-            if ($isPage) {
-                if ($layout) {
-                    $stub = $this->getPageWithLayoutStub($componentName, $layout);
-                } else {
-                    $stub = $this->getPageStub($componentName);
-                }
-            } else {
-                if ($layout) {
-                    $stub = $this->getComponentWithLayoutStub($componentName, $layout);
-                } else {
-                    $stub = $this->getComponentStub($componentName);
-                }
-            }
-
-            file_put_contents("{$path}/{$componentName}.vue", $stub);
-
-            $this->info("Vue component {$componentName} created successfully.");
-        } catch (\Exception $e) {
-            $this->error($e->getMessage());
-            return 1;
+        switch ($template) {
+            case 'blank':
+                $this->handleBlankTemplate();
+                break;
+            case 'list':
+                $this->handleListTemplate();
+                break;
+            case 'form':
+                $this->handleFormTemplate();
+                break;
         }
     }
 
-    private function getComponentStub($componentName)
+    private function handleBlankTemplate(): void
     {
-        return <<<VUE
-<template>
-    <div>
-        <p>{$componentName}</p>
-    </div>
-</template>
-
-<script>
-export default {
-    name: `{$componentName}`,
-    data() {
-        return {}
-    },
-    computed: {
-    },
-    methods: {
-    },
-    mounted() {
-    },
-    components: {
-    }
-}
-</script>
-VUE;
+        $path = $this->ask('Please enter the component path (e.g., @/components/views/MyFile.vue):');
+        $normalizedPath = $this->generator->normalizePath($path);
+        
+        $componentName = basename($normalizedPath, '.vue');
+        $this->generator->generateBlankComponent($normalizedPath, $componentName);
     }
 
-    private function getComponentWithLayoutStub($componentName, $layout)
+    private function handleListTemplate(): void
     {
-        return <<<VUE
-<template>
-    <{$layout}>
-        <div class="mx-auto">
-            <p>{$componentName}</p>
-        </div>
-    </{$layout}>
-</template>
-
-<script>
-import {$layout} from "@/layouts/{$layout}.vue"
-
-export default {
-    name: `{$componentName}`,
-    components: {
-        {$layout}
-    },
-    data() {
-        return {}
-    },
-    computed: {
-    },
-    methods: {
-    },
-    mounted() {
-    }
-}
-</script>
-VUE;
+        $endpoint = $this->ask('Please input the API endpoint to fetch data from:');
+        $columns = $this->promptForColumns();
+        $path = $this->ask('Please enter the component path:');
+        
+        $this->generator->setModelData([
+            'columns' => $columns,
+            'endpoint' => $endpoint
+        ]);
+        
+        $this->generator->generateListPageComponent($this->generator->normalizePath($path));
     }
 
-    private function getPageStub($componentName)
+    private function handleFormTemplate(): void
     {
-        return <<<VUE
-<template>
-    <div class="mx-auto">
-        <router-view v-slot="{ Component, route }">
-            <component :is="Component" :key="route.path"/>
-        </router-view>
-    </div>
-</template>
-
-<script>
-export default {
-    name: `{$componentName}`
-}
-</script>
-VUE;
-    }
-
-    private function getPageWithLayoutStub($componentName, $layout)
-    {
-        return <<<VUE
-<template>
-    <{$layout}>
-        <div class="mx-auto">
-            <router-view v-slot="{ Component, route }">
-                <component :is="Component" :key="route.path"/>
-            </router-view>
-        </div>
-    </{$layout}>
-</template>
-
-<script>
-import {$layout} from "@/layouts/{$layout}.vue"
-
-export default {
-    name: `{$componentName}`,
-    components: {
-        {$layout}
-    }
-}
-</script>
-VUE;
+        $endpoint = $this->ask('Please input the API endpoint to submit the form:');
+        $columns = $this->promptForColumns();
+        $path = $this->ask('Please enter the component path:');
+        
+        $this->generator->setModelData([
+            'columns' => $columns,
+            'endpoint' => $endpoint
+        ]);
+        
+        $this->generator->generateFormPageComponent($this->generator->normalizePath($path));
     }
 }

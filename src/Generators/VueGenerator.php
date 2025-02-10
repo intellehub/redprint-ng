@@ -13,8 +13,8 @@ class VueGenerator
     private StubService $stubService;
     private FileService $fileService;
     private string $basePath;
-    private array $modelData;
-    private Command $command;
+    private array $modelData = [];
+    private ?Command $command;
 
     private array $inputTypeMap = [
         // Numbers
@@ -41,13 +41,23 @@ class VueGenerator
         'string' => 'string'
     ];
 
-    public function __construct(string $basePath, array $modelData, Command $command)
+    public function __construct(Command|string $basePathOrCommand, ?array $modelData = null, ?Command $command = null)
     {
         $this->stubService = new StubService();
         $this->fileService = new FileService();
-        $this->basePath = $basePath;
-        $this->modelData = $modelData;
-        $this->command = $command;
+        
+        // Handle both new and old constructor patterns
+        if ($basePathOrCommand instanceof Command) {
+            $this->command = $basePathOrCommand;
+            $this->basePath = getcwd(); // Default to current working directory
+        } else {
+            $this->basePath = $basePathOrCommand;
+            $this->command = $command;
+        }
+        
+        if ($modelData) {
+            $this->modelData = $modelData;
+        }
     }
 
     public function generate()
@@ -418,5 +428,58 @@ HTML;
     private function getInputType(string $columnType): string
     {
         return $this->inputTypeMap[strtolower($columnType)] ?? 'string';
+    }
+
+    public function normalizePath(string $path): string
+    {
+        // Remove .vue extension if provided
+        $path = preg_replace('/\.vue$/', '', $path);
+        
+        // Handle @ prefix
+        if (str_starts_with($path, '@/')) {
+            $path = 'resources/js' . substr($path, 1);
+        }
+        
+        // Handle dot notation
+        $path = str_replace('.', '/', $path);
+        
+        // Ensure resources/js prefix
+        if (!str_starts_with($path, 'resources/js/')) {
+            $path = 'resources/js/' . $path;
+        }
+        
+        // Add .vue extension
+        return $path . '.vue';
+    }
+
+    public function generateBlankComponent(string $path, string $componentName): bool
+    {
+        $content = $this->stubService->getStub('vue/component.stub');
+        $processedContent = $this->stubService->processStub($content, [
+            '{{ componentName }}' => $componentName
+        ]);
+        
+        return $this->fileService->createFile($path, $processedContent);
+    }
+
+    public function generateListPageComponent(string $path): bool
+    {
+        $content = $this->stubService->getStub('vue/listPage.stub');
+        $processedContent = $this->processVueStub($content);
+        
+        return $this->fileService->createFile($path, $processedContent);
+    }
+
+    public function generateFormPageComponent(string $path): bool
+    {
+        $content = $this->stubService->getStub('vue/formPage.stub');
+        $processedContent = $this->processVueStub($content);
+        
+        return $this->fileService->createFile($path, $processedContent);
+    }
+
+    public function setModelData(array $data): void
+    {
+        $this->modelData = $data;
     }
 } 

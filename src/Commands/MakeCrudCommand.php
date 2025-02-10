@@ -11,9 +11,12 @@ use Shahnewaz\RedprintNg\Generators\VueGenerator;
 use Symfony\Component\Console\Output\NullOutput;
 use Illuminate\Support\Str;
 use Shahnewaz\RedprintNg\Enums\DataTypes;
+use Shahnewaz\RedprintNg\Traits\HandlesColumnInput;
 
 class MakeCrudCommand extends Command
 {
+    use HandlesColumnInput;
+
     /**
      * The name and signature of the console command.
      *
@@ -234,79 +237,6 @@ class MakeCrudCommand extends Command
     {
         $this->info('Generating Vue files...');
         $generator->generate();
-    }
-
-    private function promptForColumns($namespace)
-    {
-        $columns = [];
-        $this->info("\nPlease enter the first column name for the migration (id and timestamp columns are automatically added).");
-        
-        do {
-            // Column name with validation
-            do {
-                $name = $this->ask('Column Name (lowercase letters and underscore only)');
-                
-                if (empty($name)) {
-                    $this->error('Column name cannot be empty.');
-                    continue;
-                }
-                
-                if (!preg_match('/^[a-z_]+$/', $name)) {
-                    $this->error('Column name must contain only lowercase letters and underscores.');
-                    continue;
-                }
-                
-                break;
-            } while (true);
-            
-            $this->info('Column name: ' . $name);
-            
-            $type = $this->getColumnType();
-
-            // Check for relationship field
-            $relationshipData = null;
-            if (str_ends_with($name, '_id') && in_array($type, ['integer', 'bigInteger'])) {
-                $relatedModelLower = Str::beforeLast($name, '_id');
-                $relatedModelPlural = Str::plural($relatedModelLower);
-                $possibleApiEndpoint = "{$namespace}/{$relatedModelPlural}/list";
-                
-                $this->info("This looks like a model Relationship. Do you want to load options for this field from an Api endpoint?");
-                if ($this->askYesNo("This looks like a model Relationship. Do you want to load options for this field from an Api endpoint?", "y")) {
-                    $apiEndpoint = $this->ask('Please type in the Api endpoint to load data', $possibleApiEndpoint);
-                    $labelColumn = $this->ask('Please type in the label column of the related model (e.g., name)', 'name');
-                    
-                    $relationshipData = [
-                        'endpoint' => $apiEndpoint,
-                        'labelColumn' => $labelColumn,
-                        'relatedModelLower' => $relatedModelLower
-                    ];
-                }
-            }
-
-            // Additional prompts for enum type
-            $enumValues = [];
-            if ($type === 'enum') {
-                $enumValuesStr = $this->ask('Enter enum values (comma-separated)');
-                $enumValues = array_map('trim', explode(',', $enumValuesStr));
-            }
-
-            $nullable = $this->askYesNo('Is Nullable?', 'n');
-            
-            $default = $this->ask('Default value (press enter to skip)', null);
-
-            $columns[] = [
-                'name' => $name,
-                'type' => $type,
-                'nullable' => $nullable,
-                'default' => $default,
-                'enumValues' => $enumValues,
-                'relationshipData' => $relationshipData
-            ];
-
-            $addAnother = $this->askYesNo("\nDo you want to add another column?");
-        } while ($addAnother);
-
-        return $columns;
     }
 
     protected function getColumns($namespace): array
