@@ -30,6 +30,7 @@ php artisan vendor:publish --tag=redprint-config
   - vue
   - vue-router
   - vue-i18n
+  - lodash
 
 ## Configuration
 
@@ -94,28 +95,82 @@ This will generate:
 
 ### Generate Vue Component
 ```bash
-php artisan redprint:vue [component] [options]
+php artisan redprint:vue
 ```
 
-#### Options:
-- `component` : The component path using dot notation (Required)
-- `--layout=` : The layout component to wrap with (Optional)
-- `--page` : Whether to generate a page component with router-view (Optional)
+This command allows you to generate three types of Vue components:
 
-#### Examples:
+1. **Blank Component**: A basic Vue component with minimal setup
+2. **List Component**: A data table component with search, sort, and pagination
+3. **Form Component**: A form component with validation and API integration
+
+#### Usage Examples:
+
+**Blank Component:**
 ```bash
-# Basic component
-php artisan redprint:vue resources.js.components.MyComponent
-
-# Component with layout
-php artisan redprint:vue resources.js.components.MyComponent --layout DefaultLayout
-
-# Page component
-php artisan redprint:vue resources.js.pages.MyPage --page
-
-# Page component with layout
-php artisan redprint:vue resources.js.pages.MyPage --page --layout DefaultLayout
+php artisan redprint:vue
+# Select 'blank' when prompted
+# Enter component path (e.g., @/components/views/MyComponent.vue)
 ```
+
+**List Component:**
+```bash
+php artisan redprint:vue
+# Select 'list' when prompted
+# Enter API endpoint (e.g., api/v1/products)
+# Define columns when prompted
+# Enter component path (e.g., @/components/views/ProductList.vue)
+```
+
+**Form Component:**
+```bash
+php artisan redprint:vue
+# Select 'form' when prompted
+# Enter API endpoint (e.g., api/v1/products)
+# Define columns and relationships when prompted
+# Enter component path (e.g., @/components/views/ProductForm.vue)
+```
+
+#### Column Definitions
+
+When creating list or form components, you'll be prompted to define columns. Each column can have:
+
+- **Name**: The field name (e.g., 'title')
+- **Type**: Data type (string, text, boolean, integer, etc.)
+- **Nullable**: Whether the field is required
+- **Relationship Data** (optional): For form components with related models
+  ```php
+  [
+      'endpoint' => 'api/v1/categories/list',
+      'labelColumn' => 'name',
+      'relatedModelLower' => 'categories'
+  ]
+  ```
+
+#### Generated Components
+
+**Blank Component:**
+- Basic Vue 3 component structure
+- Script setup syntax
+- TypeScript support
+
+**List Component:**
+- Element Plus data table integration
+- Search functionality
+- Pagination
+- Column sorting
+- Delete/restore actions (if soft deletes enabled)
+- API integration with configured axios instance
+
+**Form Component:**
+- Form validation
+- Dynamic input types based on column definitions
+- Related model select inputs (with API integration)
+- Save/update functionality
+- Error handling
+- Loading states
+
+All components are generated with TypeScript support and follow Vue 3's composition API patterns.
 
 ## Generated API Routes
 
