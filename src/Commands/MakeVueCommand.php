@@ -78,7 +78,7 @@ class MakeVueCommand extends Command
     private function handleListTemplate(): void
     {
         $endpoint = $this->ask('Please input the API endpoint to fetch data from:');
-        $columns = $this->promptForColumns();
+        $columns = $this->promptForColumns(null, false, false, false);
         $path = $this->ask('Please enter the component path:');
         $componentName = basename($path, '.vue');
         $searchColumn = $columns[0]['name'];
@@ -98,7 +98,7 @@ class MakeVueCommand extends Command
     private function handleFormTemplate(): void
     {
         $endpoint = $this->ask('Please input the API endpoint to submit the form:');
-        $columns = $this->promptForColumns();
+        $columns = $this->promptForColumns(null, true, false, true);
         $path = $this->ask('Please enter the component path:');
         $componentName = basename($path, '.vue');
 
@@ -113,7 +113,8 @@ class MakeVueCommand extends Command
         $this->getGenerator()->generateFormPageComponent($this->getGenerator()->normalizePath($path));
     }
 
-    public function promptForColumns() {
-        return $this->getColumnInput();
+    public function promptForColumns(?string $namespace = null, $typePrompt = true, $detailsPrompt = true, $relationsPrompt = true): array
+    {
+        return $this->getColumnInput($namespace, $typePrompt, $detailsPrompt, $relationsPrompt);
     }
 }
