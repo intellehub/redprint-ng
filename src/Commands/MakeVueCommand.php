@@ -60,10 +60,9 @@ class MakeVueCommand extends Command
 
     private function handleBlankTemplate(): void
     {
-        $path = $this->ask('Please enter the component path:');
+        $path = $this->askForComponentPath();
         $componentName = basename($path, '.vue');
         
-        // Set minimal model data required for blank component
         $this->getGenerator()->setModelData([
             'model' => $componentName,
             'componentName' => $componentName,
@@ -79,7 +78,7 @@ class MakeVueCommand extends Command
     {
         $endpoint = $this->ask('Please input the API endpoint to fetch data from:');
         $columns = $this->promptForColumns(null, false, false, false);
-        $path = $this->ask('Please enter the component path:');
+        $path = $this->askForComponentPath();
         $componentName = basename($path, '.vue');
         $searchColumn = $columns[0]['name'];
         
@@ -99,7 +98,7 @@ class MakeVueCommand extends Command
     {
         $endpoint = $this->ask('Please input the API endpoint to submit the form:');
         $columns = $this->promptForColumns(null, true, false, true);
-        $path = $this->ask('Please enter the component path:');
+        $path = $this->askForComponentPath();
         $componentName = basename($path, '.vue');
 
         $this->getGenerator()->setModelData([
@@ -116,5 +115,39 @@ class MakeVueCommand extends Command
     public function promptForColumns(?string $namespace = null, $typePrompt = true, $detailsPrompt = true, $relationsPrompt = true): array
     {
         return $this->getColumnInput($namespace, $typePrompt, $detailsPrompt, $relationsPrompt);
+    }
+
+    private function askForComponentPath(): string
+    {
+        $hint = "Note: '@/components' translates to 'resources/js/components'";
+        $this->info($hint);
+        
+        while (true) {
+            $path = $this->ask('Please enter the component path (e.g., @/components/Admin/UserProfile.vue):');
+            
+            // Check if path ends with .vue
+            if (!str_ends_with($path, '.vue')) {
+                $this->error('Component path must end with .vue extension');
+                continue;
+            }
+
+            // Get the filename without extension
+            $filename = basename($path, '.vue');
+            
+            // Validate filename (must be PascalCase, letters only)
+            if (!preg_match('/^[A-Z][a-zA-Z]*$/', $filename)) {
+                $this->error('Component filename must start with a capital letter and contain only letters (PascalCase)');
+                continue;
+            }
+
+            // Validate path segments
+            $pathWithoutFile = dirname($path);
+            if (!preg_match('/^[@\/a-zA-Z]+$/', $pathWithoutFile)) {
+                $this->error('Path segments must contain only letters and forward slashes');
+                continue;
+            }
+
+            return $path;
+        }
     }
 }
