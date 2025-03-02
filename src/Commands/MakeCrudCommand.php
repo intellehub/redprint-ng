@@ -40,8 +40,7 @@ class MakeCrudCommand extends Command
         'axios',
         'vue-router',
         'vue-i18n',
-        'lodash',
-        '@vueup/vue-quill'
+        'lodash'
     ];
 
     public function __construct($basePath = null)

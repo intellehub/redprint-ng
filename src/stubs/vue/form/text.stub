@@ -1,5 +1,5 @@
 <div class="mb-5.5">
     <label class="mb-3 block text-sm font-medium text-black dark:text-white" for="form.{{ name }}">{{ $t('form.{{ name }}') }}</label>
-    <quill-editor v-model:content="form.{{ name }}" :content-type="'html'"></quill-editor>
+    <textarea v-model="form.{{ name }}" :content-type="'html'"></textarea>
     <form-error :errors="validationErrors" field="form.{{ name }}"></form-error>
 </div>
