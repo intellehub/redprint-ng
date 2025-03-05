@@ -58,7 +58,7 @@
 
 <script>
 {{ axiosImport }}
-import {_} from 'lodash'
+import {debounce} from 'lodash-es'
 import Empty from "@/components/Common/Empty.vue"
 
 export default {

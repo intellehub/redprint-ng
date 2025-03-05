@@ -30,7 +30,7 @@ php artisan vendor:publish --tag=redprint-config
   - vue
   - vue-router
   - vue-i18n
-  - lodash
+  - lodash-es
 
 ## Configuration
 
