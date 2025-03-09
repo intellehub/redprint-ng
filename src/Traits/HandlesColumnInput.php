@@ -3,6 +3,7 @@
 namespace Shahnewaz\RedprintNg\Traits;
 
 use Illuminate\Support\Str;
+use Shahnewaz\RedprintNg\Enums\DataTypes;
 
 trait HandlesColumnInput
 {
@@ -40,19 +41,7 @@ trait HandlesColumnInput
             if($typePrompt) {
                 $type = $this->choice(
                     'Select column type:',
-                    [
-                        'string' => 'String',
-                        'text' => 'Text',
-                        'integer' => 'Integer',
-                        'bigInteger' => 'Big Integer',
-                        'float' => 'Float',
-                        'decimal' => 'Decimal',
-                        'boolean' => 'Boolean',
-                        'date' => 'Date',
-                        'dateTime' => 'DateTime',
-                        'time' => 'Time',
-                        'enum' => 'Enum'
-                    ],
+                    DataTypes::getAvailableTypes(),
                     'string'
                 );
                 $this->info('Column type: ' . $type);
