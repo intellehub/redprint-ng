@@ -46,6 +46,7 @@ class FileService
             if (!file_exists($path)) {
                 return $this->writeFile($path, $content);
             }
+            return true;
         } catch (\Exception $e) {
             error_log("Failed to copy file: " . $e->getMessage());
             return false;
