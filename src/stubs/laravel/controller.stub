@@ -9,9 +9,13 @@ use Illuminate\Routing\Controller;
 
 class {{ modelName }}Controller extends Controller
 {
-    public function getIndex()
+    public function getIndex(Request $request)
     {
-        $models = {{ modelName }}::paginate(10);
+        $models = {{ modelName }}::query();
+        if ($term = $request->get('{{ modelFirstColumn }}')) {
+            $models = $models->where('{{ modelFirstColumn }}', 'LIKE',  '%'.$term.'%');
+        }
+        $models = $models->paginate(10);
         return {{ modelName }}Resource::collection($models);
     }
 
