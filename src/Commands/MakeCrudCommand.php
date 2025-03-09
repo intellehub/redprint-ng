@@ -9,7 +9,6 @@ use Shahnewaz\RedprintNg\Services\FileService;
 use Shahnewaz\RedprintNg\Generators\LaravelGenerator;
 use Shahnewaz\RedprintNg\Generators\VueGenerator;
 use Symfony\Component\Console\Output\NullOutput;
-use Shahnewaz\RedprintNg\Enums\DataTypes;
 use Shahnewaz\RedprintNg\Traits\HandlesColumnInput;
 
 class MakeCrudCommand extends Command
@@ -229,17 +228,8 @@ class MakeCrudCommand extends Command
         }
 
         // Get them interactively
-        $columns = $this->promptForColumns($namespace);
+        $columns = $this->getColumnInput($namespace);
 
         return $columns;
-    }
-
-    private function getColumnType(): string
-    {
-        return $this->choice(
-            'What is the column type?',
-            DataTypes::getAvailableTypes(),
-            0
-        );
     }
 }
