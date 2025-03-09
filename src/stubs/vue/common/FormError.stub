@@ -2,6 +2,10 @@
     <div v-if="messages">
         <p v-for="message in messages" :key="message" class="mt-2 text-sm text-[#CD5D5D] form-error">{{ message }}</p>
     </div>
+
+    <div v-if="errors">
+        <p v-if="errors && errors[field]" :key="errors" class="mt-2 text-sm text-[#CD5D5D] form-error"> {{ errors[field][0] }}</p>
+    </div>
 </template>
 
 <script>
@@ -15,7 +19,7 @@ export default {
     },
     computed: {
         messages() {
-            let err = _.find(this.errors, (o) => {
+            let err = find(this.errors, (o) => {
                 return o.field === this.field
             })
             return err?.messages

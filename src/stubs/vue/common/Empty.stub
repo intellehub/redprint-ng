@@ -1,6 +1,12 @@
 <template>
     <div class="w-full text-center no-data-block">
-        <emptysvg style="text-align: center; margin: 0 auto;"></emptysvg>
+        <div class="w-[300px] mx-auto">
+            <emptysvg 
+                class="w-full h-full"
+                viewBox="0 0 764.17285 572.568"
+                preserveAspectRatio="xMidYMid meet"
+            ></emptysvg>
+        </div>
         <h2 v-if="title">{{ title }}</h2>
         <br/>
         <span v-if="detail">{{ detail }}</span

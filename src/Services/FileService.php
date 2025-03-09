@@ -43,7 +43,9 @@ class FileService
     public function copyFile(string $path, string $content): bool
     {
         try {
-            return $this->writeFile($path, $content);
+            if (!file_exists($path)) {
+                return $this->writeFile($path, $content);
+            }
         } catch (\Exception $e) {
             error_log("Failed to copy file: " . $e->getMessage());
             return false;
