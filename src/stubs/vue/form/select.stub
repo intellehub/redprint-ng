@@ -1,7 +1,7 @@
 <div class="mb-5.5">
     <label class="mb-3 block text-sm font-medium text-black dark:text-white">{{ $t('common.{{ relatedModelLower }}') }}</label>
     <el-select
-        v-model="formData.{{ relatedColumn }}"
+        v-model="form.{{ relatedColumn }}"
         multiple
         size="large"
         class="w-full font-normal text-black focus:border-primary focus-visible:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
